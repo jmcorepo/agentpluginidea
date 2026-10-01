@@ -1,119 +1,96 @@
-# Switchboard: rides and eats dashboard MVP
+# Automatic rides and food comparison MVP
 
-## Product decision
+## Objective and boundaries
 
-Switchboard compares options across a person's existing accounts. The intended product is U.S.-only and eventually agent-connected. This implementation is a **local dashboard for both rides and food**, with browser-assisted capture and explicitly labeled user observations. MCP, a ChatGPT app, unattended purchasing, and meal discovery are later stages.
+Build a U.S.-only, single-owner local application that compares actual prices in the user's existing Uber/Lyft and DoorDash/Uber Eats accounts. The core interaction is **enter once, prepare both providers automatically, validate independent provider evidence, compare**. The interface is plain functional forms, status messages and tables. Login and exceptional account/cart problems can require attention; routine manual provider setup, manual prices and quote-verification checkboxes are outside the workflow.
 
-The core promise remains personalized comparison: the user prepares the actual quote in their signed-in provider account. The MVP does not substitute synthetic prices or generic fare models for their checkout. It proves the comparison contract and local account workflow; it does not establish provider permission or commercial API approval.
+The current implementation is an automatic browser-adapter prototype. Supported rendered page patterns are exercised with local Chromium fixtures. Actual account access and current live layouts remain a separate acceptance gate. It must report unsupported pages or unresolved context rather than present fixture success as live-provider support.
 
-## Implemented journeys
+No purchases, meal discovery, group planning, MCP, ChatGPT app or unused API-key collection in this build. Local desktop use is the primary test path. An optional single-owner Node/Chromium container configuration supports future hosting; it has not been built or deployed here, and a Sites/static preview is not the automatic backend. Local account state is the basis for personalization; provider-displayed offers and fees are used rather than generic price models. Account state alone does not prove every membership or coupon is applied.
 
-### Rides
+## Rides
 
-1. Enter pickup, destination, and passenger count.
-2. Open Uber and Lyft in separate local browser contexts; sign in directly with each provider.
-3. Prepare the same journey and equivalent vehicle categories in the provider windows or interactive screenshot view.
-4. Capture visible exact fares. Recognized category blocks with unambiguous amounts become provisional quotes. Unsupported layouts, fare ranges, missing prices, and foreign currencies are unavailable.
-5. Check route, passenger capacity, category equivalence, and USD currency. Confirm each usable quote before ranking.
-6. Continue directly on the chosen provider. Switchboard does not book rides.
+The user enters full pickup and destination addresses and 1–4 passengers. The first supported comparison is standard private UberX against Lyft Standard; shared rides and premium categories are excluded.
 
-Pickup waiting time is not destination arrival time. Ride ETA is eligible for fastest ranking only when explicitly identified as destination arrival or total trip time. Unknown ETA remains unknown.
+Each adapter finds provider route controls, enters both addresses, chooses a uniquely matching autocomplete result where available and invokes a price-search control. It never invokes a ride-request or payment control. After preparation, it reads independently rendered resolved pickup/destination details, the standard category, passenger capacity and an unambiguous fare. Typed input values and the submitted request are not route evidence.
 
-### Eats
+Both resolved addresses must match the request after conservative formatting/common street-suffix normalization. Ambiguous geocoding, missing capacity, wrong/shared category, unsupported controls, sign-in interruptions or unclear prices produce an unavailable result with a precise next action. Destination arrival/trip duration may support fastest ranking when explicitly displayed. Pickup waiting time must never be relabeled as arrival at the destination.
 
-1. Enter delivery address, restaurant branch, exact items, quantities, options, and the common tip.
-2. Open DoorDash and Uber Eats; sign in directly.
-3. Prepare matching baskets and delivery options, stopping at checkout before purchase.
-4. Capture the actual visible final total. Subtotal alone is insufficient. Record explicit breakdowns and applied benefits only where displayed.
-5. Check branch, every item and modifier, quantity, address, delivery option, matching tip, and USD currency. Confirm provisional quotes.
-6. Continue directly with the chosen provider. Capture never changes baskets, clears carts, or places an order.
+## Food
 
-A detected tip mismatch makes a captured basket ineligible. Missing tip information requires user verification. Partial fee breakdowns do not establish completeness or justify inventing missing charges.
+The user enters the restaurant name and exact physical branch address, delivery address, exact item names, quantities, structured modifier group/option pairs, optional kitchen instructions and one common tip. The first comparison uses standard delivery, without substitutions.
 
-### Observed quote fallback
+Each adapter prepares the exact branch and basket using visible provider controls and stops before purchase. It preserves a conflicting existing cart and asks the owner to resolve that exception instead of clearing it or merging unrelated items. Matching pages may be resumed without duplicate additions.
 
-When a page cannot be parsed, the user can enter the amount actually observed. It is labeled `manual`, bound to the same request, and requires an explicit equivalence/USD checkbox. An unknown ETA is left blank. This is a user observation, not a provider API quote.
+The accepted quote needs independently rendered merchant name/branch address, delivery address, every item and quantity, all specified modifiers and instructions, standard delivery, common tip and an unambiguous final total. Matching the item name alone is insufficient. A missing required option, wrong size, branch mismatch, quantity mismatch, undisclosed tip, changed delivery speed or extra cart item makes the comparison unavailable. Notes cannot substitute for structured paid options.
 
-## Dashboard and account setup
+Read explicit fee/discount breakdowns and account benefits when displayed. Subtotal is not a final total. Missing fees are unknown, not zero. When all components are present, a contradictory final total is rejected. Never invent discounts or claim an unapplied membership is reflected in the price.
 
-- Rides and Eats have request forms, provider-browser shortcuts, quote cards, captured evidence, confirmation controls, and observed-quote forms.
-- Connections displays browser state. An open browser is never proof of sign-in.
-- History stores comparisons and provenance. Historical prices are snapshots.
-- Settings explains local browser setup and session storage. No API secrets are collected.
-- The layout responds to smaller screens, but this pilot runs on the user's computer. Native ChatGPT phone integration is not implemented.
-- Empty states have no pretend quotes or seeded connections.
+## Verification, currency and ranking
 
-On desktop, provider windows open visibly so users can authenticate normally. Screenshot controls allow clicking, typing, key presses, scrolling, and navigation within the corresponding provider. No API keys are needed. Sign in is handled by the provider; the dashboard does not collect provider passwords as account settings.
+Each quote carries provider, source, status, integer-cent amount or null, capture/freshness times, optional ETA/breakdown, observed benefits, warnings and evidence. A request fingerprint prevents record mixing; it does not establish provider context.
 
-## Quote contract and ranking
+Automatic quotes also carry `verification: automatic` and `observedContext` from rendered provider DOM or a permitted provider API. The server independently validates that context against the submitted request. Only quotes that pass this validation can be `verified` and ranked. Legacy assisted history may retain its provenance but does not become automatic evidence.
 
-A quote has an ID, provider, sector, provenance, status, category/basket label, integer-cent total or `null`, currency context, capture time, freshness cutoff, optional ETA/breakdown, observed benefits, warnings, evidence, and request fingerprint.
+USD requires either an explicit USD/US$ label or independently observed full U.S. addresses with a U.S. state and five-digit ZIP: both resolved ride endpoints, or merchant and delivery addresses for food. Configuring an expected currency or reading a plain dollar sign alone is not sufficient. Explicit foreign-currency markers are rejected.
 
-Statuses are `needs_confirmation`, `verified`, and `unavailable`. Browser extraction starts provisional. **Verified means the user checked contextual equivalence**, not a provider guarantee or an automatic match of route/items. The request fingerprint binds the quote record to the submitted request; it does not independently prove what the provider page contains.
+Cheapest ranks current, equivalent, automatically verified totals. Fastest requires independently identified comparable destination/delivery ETA. At least two distinct providers must have eligible quotes before the dashboard declares a cross-provider winner. A single available result is useful but does not prove superiority over an unavailable provider.
 
-Missing values are unknown, never zero. Conflicting final totals, malformed amounts, non-USD currencies, and known inequivalence fail closed. Plain `$` is accepted only in the explicitly configured U.S./USD pilot context, with a warning and USD confirmation.
+App freshness limits are five minutes for rides and fifteen minutes for food. They are refresh rules, not provider-issued fare validity. Expired quotes leave ranking automatically. Historical records remain snapshots; refresh before acting.
 
-Only confirmed, current, matching-fingerprint quotes rank. Cheapest uses the total; fastest uses explicit ETA when available. Before calling an option cheaper than another provider, both need eligible equivalent quotes. Existing memberships and offers are accounted for by the actual provider checkout; unsupported benefit extraction does not invent savings.
+## Architecture and ownership of state
 
-App freshness cutoffs are five minutes for rides and fifteen minutes for food. These are refresh requirements, **not provider-issued fare guarantees**. Stale confirmation is rejected and stale quotes leave the ranking. Capture again before choosing.
+Node.js 22.12+, TypeScript, a small local HTTP server, Zod request validation, Playwright and static HTML/CSS/JavaScript. Separate browser contexts isolate provider accounts; actions serialize within each provider. The orchestration runs both sector adapters and records a comparison with each provider's success or actionable exception.
 
-## Architecture
+Visible provider windows are the default on supported desktops, with screenshot controls as a fallback. Account authentication remains on provider pages. Allowed navigation is restricted to the provider's HTTPS domain family, with separately permitted authentication redirects; authentication pages cannot supply quotes.
 
-- Node.js 22.12+, TypeScript, a small HTTP server, Zod validation, Playwright, and a static HTML/CSS/JavaScript dashboard.
-- Original adapters read rendered text on the current page. No private reverse-engineered APIs, stealth, fingerprint spoofing, challenge bypasses, or autonomous purchasing.
-- Separate provider browser contexts; serialized actions per provider. Provider navigation uses the corresponding HTTPS domain family. Supported authentication redirects are allowed separately; authentication pages cannot be quote sources.
-- Headed windows by default on supported desktops; screenshot fallback without a display.
-- Encrypted local history and browser storage state with an owner-restricted local key. This is a single-owner local store, not a cloud multi-tenant credential service.
-- Localhost binding by default; same-origin API checks and dashboard client header. Deliberate non-local operation requires an access password and is outside initial local testing.
-- No ordering endpoint. Screenshot controls reject recognized purchase actions. The user can independently buy in their provider window.
+Local sessions and history are encrypted in `.data/` using an owner-restricted key. Disconnect removes session state. This is a single-owner local application, not a multi-tenant credential service. The server defaults to localhost and uses same-origin API guards and a dashboard client header. Optional `MVP_PASSWORD` locks the local dashboard. Non-local operation requires a password of at least 12 characters. An included Docker/Compose option uses headless Chromium, persistent encrypted `/data`, a password and exact `APP_ORIGIN` for an external HTTPS reverse proxy. Compose binds its port to localhost by default. This packaging is not proof of a successful image build, deployment or remote provider login.
 
-## API
+Adapters use original rendered-page automation. No stealth, challenge bypass, proxy evasion, reverse-engineered private APIs or autonomous purchases. Screenshot controls reject recognized purchase actions; the owner may independently continue in the native provider window.
+
+## API and UI
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /api/status` | Browser availability and connection states |
-| `POST /api/connections/:provider/open` | Open or resume provider browser |
+| `GET /api/status` | Browser availability, authentication requirement and provider states |
+| `POST /api/connections/:provider/open` | Open/resume account browser, preserving its page |
 | `DELETE /api/connections/:provider` | Disconnect and remove saved session |
-| `GET /api/browser/:provider/screenshot` | Current viewport |
-| `POST /api/browser/:provider/action` | Click, type, key, scroll, navigate |
-| `POST /api/rides/compare` | Capture current ride pages for submitted request |
-| `POST /api/eats/compare` | Capture current checkout pages for basket |
-| `POST /api/comparisons/:id/quotes/:quoteId/confirm` | Confirm with `{confirmed:true}` |
-| `POST /api/comparisons/:id/manual` | Save explicitly observed quote |
-| `GET /api/comparisons/:id` | Comparison and current ranking |
-| `GET /api/comparisons` | History |
-| `GET /api/settings` | Capability flags; no secrets |
+| `GET /api/browser/:provider/screenshot` | Account/exception viewport |
+| `POST /api/browser/:provider/action` | Account/exception navigation and controls |
+| `POST /api/rides/compare` | Start an automatic ride comparison; return HTTP 202 job |
+| `POST /api/eats/compare` | Start an automatic food comparison; return HTTP 202 job |
+| `GET /api/jobs/:id` | Provider progress and completed comparison |
+| `GET /api/comparisons/:id` | Comparison with current eligibility/ranking |
+| `GET /api/comparisons` | History with provenance |
+| `GET /api/settings` | Capability flags without secrets |
 
-## Acceptance criteria
+Forms submit the request once and poll the job once per second, showing provider preparation, validation and action-required stages. The initial version has no cancellation endpoint. Results show provider, category/basket, actual amount, ETA, status, evidence and actionable exceptions. Connections distinguishes browser-open from proven readiness. No demo quotes or seeded account states. History preserves request details and proof. No normal-workflow manual price or quote-confirmation controls.
 
-1. Both sectors work through real browser-session capture or explicitly observed amounts.
-2. Disconnected or failed providers produce unavailable quotes, never demo prices.
-3. Captured amounts cannot rank until exact context and USD are confirmed.
-4. Subtotal-only, conflicting, malformed, foreign-currency, expired, wrong-request, and wrong-origin quotes fail closed.
-5. Manual provenance remains visible; invalid provider/sector and invalid monetary fields are rejected.
-6. Reopening a provider preserves the prepared page unless the user explicitly navigates.
-7. Disconnect deletes provider session state; history persists.
-8. Reload restores history; current ranking excludes expired quotes.
-9. Browser controls, forms, capture, confirmation, manual fallback, and history are verified end-to-end with local fixtures. Fixture amounts are test inputs, never seeded dashboard content.
-10. Live provider sign-in and current layouts must be tested on the user's computer. Fixture success is not live provider validation.
+## Acceptance gates
 
-## Research evidence and remaining gates
+1. Both providers in each sector prepare from a single submitted request and obtain prices without routine user re-entry.
+2. Route/basket context is observed independently after preparation. Tests catch a provider showing stale details even when inputs contain the new request.
+3. Wrong branch/address/items/modifiers/notes/quantity/tip/speed/category/capacity, ambiguous price, unsupported currency and missing evidence yield unavailable quotes, never fabricated zeroes.
+4. Existing conflicting carts are preserved. Retries do not duplicate basket contents or create orders.
+5. A failed provider does not suppress the other provider's result or create a false cross-provider winner.
+6. Authentication/challenge/unsupported-page failures are actionable. Browser state does not falsely assert successful login.
+7. Expired quotes and legacy assisted records cannot enter automatic rankings. Refresh/reload/history preserve these rules.
+8. Local fixtures exercise real browser interactions, adapter preparation, independent evidence, failures and purchase avoidance. Fixture values are test data, never application content.
+9. Live acceptance requires each current provider to complete the flow with a real signed-in U.S. account; record rendered selectors/evidence and repeat with changed routes/baskets, existing carts and benefits. Fixture tests alone cannot pass this gate.
+10. Before public distribution, establish permitted comparison/automation, access reliability and support responsibilities. This does not block implementing/testing the local prototype.
 
-The [official Uber authentication SDK](https://github.com/uber/rides-android-sdk/tree/main/authentication) supplies maintained OAuth/PKCE. Older [Uber rider documentation](https://github.com/uber/rides-python-sdk) shows estimates, upfront fares, and booking; current rider-scope access remains unresolved. [Lyft's official Go SDK](https://github.com/lyft/lyft-go-sdk) is deprecated. [DoorDash Drive's official example](https://github.com/doordash-oss/doordash_sdk_example_application) demonstrates dispatch, not personalized consumer baskets.
+## Research evidence and production path
 
-A [secondary MealMe specification](https://github.com/jentic/jentic-public-apis/blob/main/apis/openapi/mealme/main/1.0.0/openapi.json) describes menus, quotes, and ordering. It does not establish existing DoorDash/Uber Eats membership/coupon access. Actual pricing, channels, consumer linking, and comparison rights need primary confirmation.
+The [official Uber authentication SDK](https://github.com/uber/rides-android-sdk/tree/main/authentication) supplies OAuth/PKCE. Older [Uber rider SDK documentation](https://github.com/uber/rides-python-sdk) describes quotes and booking; this is not evidence that a new developer has those production scopes. [Lyft's old official Go SDK](https://github.com/lyft/lyft-go-sdk) is deprecated. [DoorDash Drive's example](https://github.com/doordash-oss/doordash_sdk_example_application) demonstrates dispatch, not personalized consumer marketplace comparison.
 
-[Existing DoorDash](https://github.com/markswendsen-code/mcp-doordash) and [Uber Eats](https://github.com/markswendsen-code/mcp-ubereats) agent connectors establish prior attempts. Some code defaults unknown totals to zero and generates timestamp-based order IDs without provider confirmation. This MVP preserves unknowns and does not execute purchases. Their live reliability and permissions are unverified.
+A [secondary MealMe specification](https://github.com/jentic/jentic-public-apis/blob/main/apis/openapi/mealme/main/1.0.0/openapi.json) describes menus, quotes and ordering. Personal DoorDash/Uber Eats memberships/coupons, exact channels, actual pricing and permitted comparison need primary confirmation. Do not substitute an aggregator basket for an account-personalized quote without proving equivalence.
 
-Before unattended commercial release, settle competitive-comparison permissions, intended automation rights, production API eligibility, personalized benefit coverage, quote guarantees, pricing, and purchase/support responsibilities. Current vendor terms and traditional competitor capabilities could not be fully verified through public-web access in this environment. That evidence gap is not a claim of technical impossibility.
+Existing [DoorDash](https://github.com/markswendsen-code/mcp-doordash) and [Uber Eats](https://github.com/markswendsen-code/mcp-ubereats) agent prototypes demonstrate prior browser attempts. Some code defaults unknown totals to zero or creates timestamp-based order IDs without provider confirmation. This build uses original adapters, preserves unknowns and has no purchase execution. Their current reliability and rights are unverified.
 
-## Next stages
+Secondary browser research supplies useful warnings, not access proof. An [openweb progress report](https://github.com/imoonkey/openweb/blob/main/src/sites/ubereats/PROGRESS.md) says Uber route inputs lacked standard accessible/test attributes during its capture. A [separate agent skill](https://github.com/AFK-surf/Comma/blob/main/resources/salix-system-files/skills/lyft-grab/SKILL.md) reports Lyft web redirects and closed new-app API access. These claims have not been checked live here. Referenced food prototypes supply some address/menu/cart selector leads, but not complete independent branch/modifier/instruction/delivery evidence. Local fixture semantics for missing fields must not be presented as established vendor DOM. Reverse-engineered API calls in other repositories are not adopted by this build.
 
-1. Test actual provider layouts locally and extend parsers only from observed evidence.
-2. Add supported official quote adapters as provider access and rights become available.
-3. Add permitted route/basket preparation, preserving existing carts and enforcing item/category equivalence.
-4. Add MCP and a ChatGPT app to the same backend. The [official authenticated Apps SDK example](https://github.com/openai/openai-apps-sdk-examples/tree/main/authenticated_server_python) is the starting pattern. Sign in with ChatGPT eligibility is a separate commercial question; its local DevKit has a [noncommercial license](https://github.com/openai/sign-in-with-chatgpt-devkit/blob/main/LICENSE).
-5. Add supported purchase execution with exact-quote approval, duplicate prevention, and ambiguous-result recovery.
-6. Add meal discovery and group planning using proven menu/basket infrastructure.
+Live vendor terms and competitor coverage could not be fully checked in this environment because public-web access was unavailable. Commercial API access and automation/comparison rights remain unresolved, not technically impossible. The smallest useful proof is the four live automatic quote flows with strict equivalence; prioritize hardening rides first if that proof succeeds sooner.
 
-The likely moat is reliable personalized comparison and execution, permitted provider access, and agent distribution. Test consumer subscription or agent-API pricing against savings, repeat usage, comparison costs, and support burden. No affiliate rates or aggregator prices are assumed.
+After live proof: stabilize selectors and diagnostics, secure permitted official integrations when available, add MCP/ChatGPT app around the same verified contract, then add approved purchasing with duplicate prevention and ambiguous-result recovery. Meal discovery and group planning follow reliable menu/basket infrastructure. The [authenticated Apps SDK example](https://github.com/openai/openai-apps-sdk-examples/tree/main/authenticated_server_python) is an integration pattern; Sign in with ChatGPT eligibility and the [DevKit commercial license](https://github.com/openai/sign-in-with-chatgpt-devkit/blob/main/LICENSE) are separate questions.
+
+Potential moat: reliable personalized comparison, permitted provider access, robust execution and agent distribution. Validate subscriptions or agent-API usage pricing against actual savings, frequency, browser maintenance and support costs; no affiliate rates are assumed.

@@ -1,15 +1,19 @@
-# MVP verification
+# Automatic MVP verification
 
-Verified locally in the build environment on 2026-10-01 using Node.js 24.19.0 and Chromium 151.0.7922.173.
+Checked on 2026-10-01 with Node.js 24.19.0 and 22.12.0, and real Chromium. Provider documents in these checks are intercepted local fixtures; no production accounts are used and no orders or rides are purchased.
 
-- TypeScript checking and production compilation passed.
-- All 31 unit tests passed: provider-origin checks, conservative money parsing, food fee reconciliation, tip mismatch, currency, ETA semantics, ranking eligibility, freshness, confirmation, and encrypted storage.
-- `npm run verify` passed using synthetic pages in real Chromium. It exercised all four provider readers, isolated session cookies, prepared-page preservation, screenshots, typing, recognized purchase-control rejection, and disconnect.
-- The dashboard workflow passed through the HTTP API and encrypted store: password login, API origin/client/auth guards, provisional quote confirmation, two-provider cost/ETA ranking, rides and food manual observations, unavailable-provider errors, history reload, server restart, and a 390px viewport without horizontal overflow. No uncaught browser page errors occurred.
-- A separate agent-browser check loaded the dashboard, inspected its controls, and captured its initial screenshot.
+- TypeScript checking and compilation passed.
+- All 48 unit and browser-adapter checks passed on Node 22.12.0. These checks cover strict totals/currency/tip/fee handling, provider origins, independent route/basket evidence, vehicle capacity, exact modifiers/instructions/quantities, existing-cart preservation/reuse, delayed old ride fares, ranking and encrypted storage.
+- The complete dashboard test passed on Node 22.12.0 and 24.19.0 from one form submission through HTTP background jobs, both provider adapters, independent server validation, ranking and encrypted history. It exercises rides and food, partial login failure, removed manual/confirmation endpoints, owner authentication, cross-origin/client guards, session isolation/recovery, disconnect and server restart.
+- Cloud proxy contract checks and Worker artifact validation passed with mocked upstream responses; no live runtime or database was used.
+- Agent-browser opened the dev server and inspected controls/errors. The plain dashboard had no uncaught page errors and passed a 390px viewport check.
 
-## Practical limits
+## What remains unverified
 
-Fixture data lives only in temporary verification directories, which the script removes. The normal dashboard starts empty. These checks do not prove successful live Uber, Lyft, Uber Eats, or DoorDash login or compatibility with their current account-specific layouts. Public provider-site access was blocked in the build environment; those checks require the user's computer and actual accounts.
+These results prove the application and supported fixture flows. They do not prove compatibility with current signed-in Uber, Lyft, Uber Eats or DoorDash pages. Source references supply some real selector leads; independently matching every live route/branch/item/modifier/delivery field remains an acceptance requirement. Unsupported pages return unavailable instead of borrowing submitted fields as evidence.
 
-No real rides, food orders, or charges were made. No account credentials or API keys are included in the source. The GitHub CI workflow runs the same checks on Node 22; see the draft PR for its current result. An initial CI run identified a Node-version-specific test-launcher flag, which was replaced with a portable single-process launcher. The declared minimum Node version is 22.12; the local run above used Node 24.
+The active managed cloud network policy still reports restricted access with package-manager destinations only. No provider account credentials or consumer API entitlements are configured. Live automatic acceptance therefore needs applied provider-web access and owner sign-in, followed by real changed-route and changed-basket tests. Some secondary source reports suggest Lyft web ride availability has changed; that needs live verification.
+
+Docker/Compose packaging supports a single-owner Node browser runtime with persistent encrypted data, a private dashboard password and configured HTTPS origin. Image build verification was blocked by Docker Hub HTTP 429 and a policy-blocked mirror; no container deployment is claimed. A private Sites front end can relay to that runtime when configured; a disconnected front end cannot compare provider prices itself.
+
+App refresh cutoffs are not provider fare guarantees. Purchasing, MCP, commercial provider access, account benefit coverage and multi-user hosting remain outside this build. Fixture inputs never seed the normal app or hosted dashboard.

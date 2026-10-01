@@ -97,7 +97,7 @@ export class BrowserPool {
   private async persist(provider: Provider): Promise<void> {
     const session = this.sessions.get(provider);
     if (!session) return;
-    const state = await session.context.storageState();
+    const state = await session.context.storageState({indexedDB:true});
     if (this.sessions.get(provider) !== session) return;
     await this.vault.write(`session-${provider}`, state);
   }
@@ -138,7 +138,7 @@ export class BrowserPool {
         });
         const page = await context.newPage();
         page.setDefaultTimeout(8_000);
-        session = {context, page, state: {provider, status: 'browser_open', message: 'Sign in directly on the provider website, then prepare your quote.', updatedAt: new Date().toISOString()}};
+        session = {context, page, state: {provider, status: 'browser_open', message: 'Sign in directly on the provider website. The app prepares the requested route or basket.', updatedAt: new Date().toISOString()}};
         this.sessions.set(provider, session);
         this.attachPage(provider, session, page);
         context.on('page', popup => this.attachPage(provider, session!, popup));
@@ -146,7 +146,7 @@ export class BrowserPool {
       try {
         const response = await session.page.goto(url ?? providerHome[provider], {waitUntil: 'domcontentloaded', timeout: 25_000});
         if (response && response.status() >= 400) throw new Error(`Provider returned HTTP ${response.status()}. Check access in the browser.`);
-        session.state = {...session.state, status: 'browser_open', message: 'Browser open. Sign in and prepare the requested trip or basket.', updatedAt: new Date().toISOString()};
+        session.state = {...session.state, status: 'browser_open', message: 'Browser open. Sign in if requested, then submit your comparison.', updatedAt: new Date().toISOString()};
         await this.persist(provider);
       } catch (e) {
         session.state = {...session.state, status: 'error', message: (e as Error).message.replace(/https?:\/\/\S+/g, '[provider page]').slice(0, 240), updatedAt: new Date().toISOString()};
@@ -158,7 +158,7 @@ export class BrowserPool {
     return this.serial(provider, async () => {
       const session = this.sessions.get(provider);
       if (!session || session.page.isClosed()) throw new Error('Open this provider browser and sign in first.');
-      if (!allowedProviderUrl(provider, session.page.url())) throw new Error('Finish signing in and open the provider quote or checkout page.');
+      if (!allowedProviderUrl(provider, session.page.url())) throw new Error('Finish signing in to this provider, then retry the comparison.');
       const result = await action(session.page);
       await this.persist(provider);
       return result;
