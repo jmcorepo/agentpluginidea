@@ -1,0 +1,26 @@
+{
+  "name": "agent-commerce-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "node --import tsx src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "node --import tsx --test --test-isolation=none test/*.test.ts",
+    "check": "tsc --noEmit",
+    "verify": "node --import tsx test/browser.e2e.ts"
+  },
+  "dependencies": {
+    "playwright": "^1.58.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Switchboard — compare rides & food</title>
+  <link rel="stylesheet" href="/style.css"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#rides"><span class="brand-icon">↔</span><span>switchboard<small>YOUR OPTIONS, TOGETHER</small></span></a>
+      <nav aria-label="Main navigation">
+        <button class="nav-item active" data-view="rides"><span>↗</span> Rides</button>
+        <button class="nav-item" data-view="eats"><span>◒</span> Eats</button>
+        <button class="nav-item" data-view="connections"><span>⌁</span> Connections <span id="connection-count" class="count">0</span></button>
+        <button class="nav-item" data-view="history"><span>◷</span> History</button>
+        <button class="nav-item" data-view="settings"><span>⚙</span> Settings</button>
+      </nav>
+      <div class="sidebar-footer"><span class="live-dot"></span> Browser-assisted pilot<p>U.S. · USD<br>Compare, then choose.</p></div>
+    </aside>
+    <main>
+      <header class="topbar"><span>Personal commerce workspace</span><span id="runtime-status" class="status-pill">Connecting…</span></header>
+      <div id="notice" class="notice hidden" role="status"></div>
+      <section class="view" id="view-rides">
+        <div class="page-heading"><div><div class="eyebrow">A BETTER WAY THERE</div><h1>One trip. All your options.</h1><p>Compare the fares visible in your Uber and Lyft accounts.</p></div><span class="scope-tag">RIDES</span></div>
+        <div class="workspace-grid">
+          <section class="panel request-panel"><div class="panel-heading"><h2>Where are you headed?</h2><span class="step">01</span></div>
+            <form id="rides-form">
+              <label>Pickup<input name="pickup" required maxlength="300" placeholder="Street address or pickup point" autocomplete="street-address"></label>
+              <label>Destination<input name="destination" required maxlength="300" placeholder="Where you want to go"></label>
+              <label>Passengers<select name="passengers"><option value="1">1 passenger</option><option value="2">2 passengers</option><option value="3">3 passengers</option><option value="4">4 passengers</option><option value="5">5 passengers</option><option value="6">6 passengers</option></select></label>
+              <div class="provider-pair"><button type="button" class="provider-open" data-provider="uber"><span class="provider-logo uber">U</span><span>Uber<small>Open your account</small></span><span>↗</span></button><button type="button" class="provider-open" data-provider="lyft"><span class="provider-logo lyft">ly</span><span>Lyft<small>Open your account</small></span><span>↗</span></button></div>
+              <div class="instruction"><strong>Set up the same trip in both browsers.</strong><p>Choose equivalent ride categories and passenger capacity. Then capture the displayed fares here.</p></div>
+              <button class="primary full" type="submit">Capture ride quotes <span>→</span></button>
+            </form>
+          </section>
+          <section class="results-area" id="rides-results"><div class="empty-state"><div class="empty-art">↗ <span>↔</span> ↗</div><h2>Your next move, made clearer.</h2><p>Open your provider accounts and set up a trip. Your actual captured quotes will appear here.</p><span class="subtle-pill">No purchase is placed</span></div></section>
+        </div>
+      </section>
+      <section class="view hidden" id="view-eats">
+        <div class="page-heading"><div><div class="eyebrow">THE SAME MEAL, COMPARED</div><h1>Good food. A clearer total.</h1><p>Compare an exact basket in your DoorDash and Uber Eats accounts.</p></div><span class="scope-tag">EATS</span></div>
+        <div class="workspace-grid">
+          <section class="panel request-panel"><div class="panel-heading"><h2>What’s in your order?</h2><span class="step">01</span></div>
+            <form id="eats-form">
+              <label>Delivery address<input name="address" required maxlength="300" placeholder="Street address, unit, and ZIP code" autocomplete="street-address"></label>
+              <label>Restaurant & branch<input name="restaurant" required maxlength="300" placeholder="Restaurant name and location"></label>
+              <div class="field-heading"><span>Exact basket</span><button type="button" class="text-button" id="add-item">+ Add item</button></div><div id="basket-items"></div>
+              <label>Same tip on both platforms <span class="optional">USD</span><input name="tip" required inputmode="decimal" value="0.00" pattern="[0-9]+(\.[0-9]{1,2})?" placeholder="0.00"></label>
+              <div class="provider-pair"><button type="button" class="provider-open" data-provider="doordash"><span class="provider-logo doordash">D</span><span>DoorDash<small>Open your account</small></span><span>↗</span></button><button type="button" class="provider-open" data-provider="ubereats"><span class="provider-logo ubereats">UE</span><span>Uber Eats<small>Open your account</small></span><span>↗</span></button></div>
+              <div class="instruction"><strong>Prepare identical baskets in both browsers.</strong><p>Match the branch, sizes, options, address, delivery speed, and tip. Stop before placing the order.</p></div>
+              <button class="primary full" type="submit">Capture checkout quotes <span>→</span></button>
+            </form>
+          </section>
+          <section class="results-area" id="eats-results"><div class="empty-state"><div class="empty-art">◒ <span>↔</span> ◒</div><h2>The price you actually see.</h2><p>Build the same basket in both provider browsers. Capture the checkout totals, then check the details before ranking.</p><span class="subtle-pill">Your memberships stay in your account</span></div></section>
+        </div>
+      </section>
+      <section class="view hidden" id="view-connections"><div class="page-heading"><div><div class="eyebrow">YOUR ACCOUNTS</div><h1>A place for every option.</h1><p>Open a private provider browser, sign in, and prepare a trip or basket.</p></div></div><div id="connection-grid" class="connection-grid"></div><div class="panel info-panel"><h2>Browser connections</h2><p>Opening a browser does not confirm that you are signed in. Check your account in the browser view. Sessions persist on this machine until you disconnect.</p><p>Your payment and membership settings remain with each provider. This pilot does not place purchases.</p></div></section>
+      <section class="view hidden" id="view-history"><div class="page-heading"><div><div class="eyebrow">RECENT COMPARISONS</div><h1>Your decisions, in one place.</h1><p>Past quotes are snapshots. Capture fresh prices before you choose.</p></div><button class="secondary" id="refresh-history">Refresh</button></div><div id="history-list"></div></section>
+      <section class="view hidden" id="view-settings"><div class="page-heading"><div><div class="eyebrow">LOCAL WORKSPACE</div><h1>At home on your computer.</h1><p>Your account browsers and comparison history live on this machine.</p></div></div><section class="panel settings-panel"><h2>Browser setup</h2><p id="local-browser-status" class="muted">Checking local browser…</p><p class="muted">On a desktop, provider windows open directly so you can sign in normally. The screenshot view also lets you click, type, and scroll.</p><h2>No API keys required</h2><p class="muted">This pilot captures the provider pages you prepare. It does not use official quote APIs or place orders. Sign in to your own provider accounts through their browser windows.</p><h2>Session storage</h2><p class="muted">Saved cookies and account session data remain on your computer. Disconnect an account to remove its saved browser session. Your comparisons remain in History.</p><h2>Fresh quotes, every time</h2><p class="muted">History is a record of what you observed. Prepare the current trip or basket and capture again to see updated prices.</p></section></section>
+      <footer class="main-footer">Quotes come from your provider browser or your own observations. Availability and prices can change.</footer>
+    </main>
+  </div>
+  <dialog id="browser-dialog" class="browser-dialog"><div class="browser-head"><div><h2 id="browser-title">Provider browser</h2><p id="browser-description">Sign in and prepare your comparison.</p></div><button class="icon-button" id="close-browser" aria-label="Close browser view">×</button></div><div class="browser-toolbar"><input id="browser-url" aria-label="Provider URL" placeholder="https://"><button class="secondary" id="browser-navigate">Go</button><button class="secondary" id="browser-refresh">Refresh view</button></div><div id="browser-message" class="browser-message" role="status"></div><div class="screenshot-wrap"><img id="browser-image" alt="Live provider browser. Click the screenshot to interact." draggable="false"><div id="browser-loading" class="browser-loading hidden">Updating browser…</div></div><div class="browser-controls"><input type="password" id="browser-text" aria-label="Text to type into selected browser field" placeholder="Click a field above, then enter text here"><button class="secondary" id="browser-type">Type text</button><button class="secondary" data-key="Tab">Tab</button><button class="secondary" data-key="Enter">Enter</button><button class="secondary" data-key="Backspace">⌫</button><button class="secondary" data-scroll="-500">↑ Scroll</button><button class="secondary" data-scroll="500">↓ Scroll</button></div><p class="browser-footnote">Check the route or basket yourself. Do not press the provider’s purchase button unless you intend to buy directly from that provider.</p></dialog>
+  <dialog id="login-dialog" class="login-dialog"><form id="login-form"><div class="brand-icon">↔</div><h2>Open your workspace</h2><p>This workspace requires its access password.</p><label>Password<input type="password" name="password" required autocomplete="current-password"></label><div id="login-error" role="alert"></div><button class="primary full" type="submit">Sign in</button></form></dialog>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
