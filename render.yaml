@@ -1,11 +1,19 @@
-# Optional free test deployment. Sessions/history reset when the free service restarts.
+# Persistent browser backend. Review Render's service and disk cost before applying.
 services:
   - type: web
     name: agent-commerce-browser
     runtime: docker
-    plan: free
+    repo: https://github.com/jmcorepo/agentpluginidea
+    branch: codex/local-rides-eats-mvp
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    numInstances: 1
     healthCheckPath: /health
     autoDeployTrigger: 'off'
+    disk:
+      name: agent-commerce-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: MVP_PASSWORD
         generateValue: true
@@ -13,3 +21,7 @@ services:
         value: 'true'
       - key: HOST
         value: 0.0.0.0
+      - key: DATA_DIR
+        value: /data
+      - key: NODE_ENV
+        value: production

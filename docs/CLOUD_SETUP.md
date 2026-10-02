@@ -2,7 +2,9 @@
 
 The private cloud dashboard needs a separate Node/Chromium service for provider browsing. The Site itself serves the UI and address suggestions. It cannot host the provider browser.
 
-A Render Blueprint (`render.yaml`) is included for a free test service. Sign into Render, choose **New → Blueprint**, connect this repository and select the `codex/local-rides-eats-mvp` branch. The blueprint builds the existing Dockerfile, starts the comparison service and generates its private `MVP_PASSWORD`. This deployment requires your Render/GitHub account connection; it has not been provisioned here.
+A Render Blueprint (`render.yaml`) is included for the browser backend. It selects one Standard instance (1 CPU, 2 GB RAM), a 1 GB persistent disk mounted at `/data`, the existing Dockerfile, and the `codex/local-rides-eats-mvp` branch. Provider sessions, the vault encryption key, and history stay on that disk across service restarts. Automatic deployments are disabled, so source updates do not restart an active comparison automatically.
+
+Install and connect the Render integration to your account to allow deployment management from this chat. In Render, connect GitHub and grant access to `jmcorepo/agentpluginidea`. Alternatively, sign into Render and choose **New → Blueprint**, connect this repository, and select `codex/local-rides-eats-mvp` as the Blueprint source branch. The service branch setting inside the file does not replace selecting the branch that contains the Blueprint. Review the current Standard instance and disk charges before applying. The blueprint generates the private `MVP_PASSWORD`. These resources have not been provisioned yet.
 
 Once deployment is healthy, configure these server-side environment bindings on the existing private Site:
 
@@ -11,6 +13,8 @@ Once deployment is healthy, configure these server-side environment bindings on 
 
 Keep the password out of chat, Git and public assets. The Node service reads Render's external HTTPS origin automatically. Then open Accounts in the private dashboard and sign in to each provider through the browser view.
 
-Free Render hosting sleeps when idle and has no persistent disk. It is limited to an initial connectivity test (0.1 CPU and 512 MB); four live provider pages may exceed that memory. Use a host with at least 1 GB of memory for browser testing. Restarting it loses saved provider sign-ins and history, so you will need to sign in again. For persistent use, deploy the same container on a host with a persistent volume mounted at `/data`. The free blueprint does not purchase a paid plan or add a disk.
+Verify `/health` returns `{ "ok": true }`, then confirm the dashboard reports a connected runtime and an available browser. Open each provider through Accounts, sign in, and test a real ride and food comparison. Restart the service and verify the stored account sessions and comparison history survive. The backend is a single-owner MVP; do not share its login with other users.
+
+Free Render hosting sleeps when idle, has 512 MB of memory, and cannot attach a persistent disk. It is insufficient for the recommended multi-provider browser test. The Standard size is a starting point; monitor memory while all four provider sessions are open. Services with an attached disk run as a single instance and restart during deployments.
 
 Hosting does not establish live provider compatibility. Current page layouts still require the signed-in acceptance checks in MVP_SPEC.md.
