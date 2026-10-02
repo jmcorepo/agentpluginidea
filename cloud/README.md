@@ -22,3 +22,5 @@ node scripts/check.mjs
 Checks use mocked upstream Fetch responses for authentication, cookie stripping, exact API/job/binary relay, same-origin guards and disconnected failures. They do not contact a live runtime/provider or place orders.
 
 The existing Drizzle/D1 schema and applied migration are retained unchanged. The proxy does not read or write the old worksheet records; current comparison history lives in the Node runtime's encrypted data store. Do not generate a migration for this proxy-only change.
+
+Address suggestions are served directly by the Worker through Photon/OpenStreetMap and work without either runtime binding. Only partial address search text is sent to that public demo service; small pilot use is rate-limited and account/browser data is not sent.

@@ -14,6 +14,8 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { z } from "zod";
+import {fetch as networkFetch, EnvHttpProxyAgent} from "undici";
+import {createAddressSearch, type AddressFetcher} from "../shared/addresses.mjs";
 import { BrowserPool } from "./browser.js";
 import { Vault } from "./vault.js";
 import {
@@ -43,9 +45,12 @@ export interface ApplicationOptions {
   origin?: string;
   vault: Vault;
   browser: BrowserPool;
+  addressFetcher?: AddressFetcher;
 }
 export async function createApplication(options: ApplicationOptions) {
   const { port, vault, browser } = options;
+  const addressProxy = options.addressFetcher ? undefined : new EnvHttpProxyAgent();
+  const addressSearch = createAddressSearch(options.addressFetcher ?? ((url,init)=>networkFetch(url,{...init,dispatcher:addressProxy})));
   const host = options.host ?? "127.0.0.1";
   const password = options.password ?? "";
   const configuredOrigin = options.origin ? new URL(options.origin) : undefined;
@@ -432,11 +437,13 @@ export async function createApplication(options: ApplicationOptions) {
     try {
       const path = new URL(req.url || "/", "http://localhost").pathname;
       const method = req.method || "GET";
+      if (path === "/health" && method === "GET") return send(res,200,{ok:true});
       if (!path.startsWith("/api/")) {
         const assets: Record<string, [string, string]> = {
           "/": ["index.html", "text/html; charset=utf-8"],
           "/index.html": ["index.html", "text/html; charset=utf-8"],
           "/app.js": ["app.js", "text/javascript; charset=utf-8"],
+          "/address-autocomplete.js": ["address-autocomplete.js", "text/javascript; charset=utf-8"],
           "/style.css": ["style.css", "text/css; charset=utf-8"],
           "/favicon.svg": ["favicon.svg", "image/svg+xml"],
         };
@@ -493,6 +500,10 @@ export async function createApplication(options: ApplicationOptions) {
       }
       if (!ownerAuthenticated(req))
         return send(res, 401, { error: "Unlock your dashboard first." });
+      if (path === "/api/addresses/search" && method === "GET") {
+        const query = new URL(req.url!, "http://localhost").searchParams.get("q") ?? "";
+        return send(res,200,await addressSearch(query));
+      }
       if (path === "/api/logout" && method === "POST") {
         const token = req.headers.cookie
           ?.split(";")
@@ -645,6 +656,7 @@ export async function createApplication(options: ApplicationOptions) {
         server.close((error) => (error ? reject(error) : resolveClose())),
       );
       await browser.close();
+      await addressProxy?.close();
       await Promise.allSettled([...pending]);
     },
   };
@@ -663,7 +675,7 @@ if (
     port,
     host,
     password: process.env.MVP_PASSWORD,
-    origin: process.env.APP_ORIGIN,
+    origin: process.env.APP_ORIGIN || process.env.RENDER_EXTERNAL_URL,
     vault,
     browser: new BrowserPool(vault),
   });

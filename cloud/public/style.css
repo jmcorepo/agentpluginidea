@@ -3,3 +3,5 @@
 *,*::before,*::after{box-sizing:border-box}fieldset{min-width:0;width:100%}.view,#rides-results,#eats-results,#connection-list,#history-list{min-width:0;max-width:100%}table{max-width:100%}td,th{overflow-wrap:anywhere}dialog{max-width:calc(100vw - 24px)}
 
 .table-scroll{width:100%;max-width:100%;overflow-x:auto}.table-scroll table{display:table}#rides-results td:last-child,#eats-results td:last-child{min-width:240px}
+
+.address-lookup{max-width:580px;margin:12px 0}.address-lookup label{margin-bottom:4px}.address-suggestions{list-style:none;margin:4px 0;padding:0;border:1px solid #888;max-height:240px;overflow:auto}.address-suggestions [role=option]{padding:8px;cursor:pointer;border-bottom:1px solid #ddd;overflow-wrap:anywhere}.address-suggestions [role=option]:last-child{border-bottom:0}.address-suggestions [aria-selected=true]{background:#eee;outline:1px solid #333;outline-offset:-1px}.address-status,.address-attribution{margin:4px 0;font-size:13px;overflow-wrap:anywhere}

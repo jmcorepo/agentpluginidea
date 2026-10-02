@@ -1,0 +1,15 @@
+# Optional free test deployment. Sessions/history reset when the free service restarts.
+services:
+  - type: web
+    name: agent-commerce-browser
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    autoDeployTrigger: 'off'
+    envVars:
+      - key: MVP_PASSWORD
+        generateValue: true
+      - key: BROWSER_HEADLESS
+        value: 'true'
+      - key: HOST
+        value: 0.0.0.0

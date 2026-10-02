@@ -60,3 +60,7 @@ npm run verify
 `npm test` includes Chromium adapter fixtures, so install Chromium before running tests (CI uses `npx playwright install --with-deps chromium`). Verification uses isolated local fixtures and does not sign in to live providers or place orders. Missing/ambiguous totals, wrong addresses, mismatched baskets/tips, foreign currency and expired quotes must fail closed. Five-minute ride and fifteen-minute food freshness cutoffs are app refresh rules, not provider fare guarantees.
 
 Read [the spec](docs/MVP_SPEC.md) for scope and build gates, and [verification notes](docs/VERIFICATION.md) for completed checks and remaining live-test limits. Before a public commercial product, verify provider automation/comparison permissions, official API access, reliability and support responsibilities.
+
+Address fields offer U.S. search-as-you-type suggestions through Photon/OpenStreetMap. Partial address text goes to that geocoder; no provider account data is sent. This small test deployment uses Photon's public demo API with a request limit. Address suggestions remain separate from provider quote verification.
+
+For cloud browser deployment and connection settings, see [CLOUD_SETUP.md](docs/CLOUD_SETUP.md).

@@ -10,8 +10,8 @@
 <section id="view-rides" class="view">
 <h2>Compare rides</h2>
 <form id="rides-form">
-<label>Pickup address <input name="pickup" required maxlength="300" placeholder="Full street address, city, state, ZIP"></label>
-<label>Destination address <input name="destination" required maxlength="300" placeholder="Full street address, city, state, ZIP"></label>
+<label>Pickup address <input name="pickup" data-address-search required maxlength="300" placeholder="Full street address, city, state, ZIP"></label>
+<label>Destination address <input name="destination" data-address-search required maxlength="300" placeholder="Full street address, city, state, ZIP"></label>
 <label>Passengers <input name="passengers" type="number" min="1" max="4" value="1" required></label>
 <p>Standard, private rides: UberX and Lyft Standard. Pickup wait and destination arrival are different estimates.</p>
 <button type="submit">Compare Uber and Lyft</button>
@@ -21,9 +21,9 @@
 <section id="view-eats" class="view" hidden>
 <h2>Compare exact food baskets</h2>
 <form id="eats-form">
-<label>Delivery address <input name="address" required maxlength="300" placeholder="Street address, unit, city, state, ZIP"></label>
+<label>Delivery address <input name="address" data-address-search required maxlength="300" placeholder="Street address, unit, city, state, ZIP"></label>
 <label>Restaurant name <input name="restaurant" required maxlength="200"></label>
-<label>Restaurant branch address <input name="restaurantAddress" required maxlength="300" placeholder="Exact physical branch address"></label>
+<label>Restaurant branch address <input name="restaurantAddress" data-address-search required maxlength="300" placeholder="Exact physical branch address"></label>
 <p>Standard delivery. No substitutions.</p>
 <div id="basket-items"></div><button id="add-item" type="button">Add another item</button>
 <label>Tip in USD <input name="tip" required inputmode="decimal" value="0.00" pattern="[0-9]+(\.[0-9]{1,2})?"></label>

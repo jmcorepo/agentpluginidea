@@ -1,3 +1,4 @@
+const addressSearch = createAddressSearch((url,options)=>fetch(url,options));
 const disconnectedMessage = 'Automatic browser runtime is not connected; local app or hosted Node container must be started.';
 let session;
 function reply(body,status=200){return new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});}
@@ -14,7 +15,7 @@ async function login(config,force=false){
   if(current.pending)return current.pending;
   if(!force&&current.cookie&&current.until>Date.now())return current.cookie;
   current.pending=(async()=>{
-    const response=await fetch(config.origin+'/api/login',{method:'POST',headers:upstreamHeaders(config,null,'application/json'),body:JSON.stringify({password:config.password}),redirect:'manual',signal:AbortSignal.timeout(10000)});
+    const response=await fetch(config.origin+'/api/login',{method:'POST',headers:upstreamHeaders(config,null,'application/json'),body:JSON.stringify({password:config.password}),redirect:'manual',signal:AbortSignal.timeout(70000)});
     if(!response.ok)throw new Error('Runtime authentication failed');
     const value=response.headers.get('Set-Cookie')||'';
     const match=value.match(/(?:^|,\s*)mvp_session=([^;\s,]+)/);
@@ -56,11 +57,15 @@ export default {async fetch(request,env){
   if(!path.startsWith('/api/')){
     const file=path==='/'?'index.html':path.slice(1);
     if(request.method!=='GET'||!Object.hasOwn(assets,file))return reply({error:'Not found.'},404);
-    const mime={'index.html':'text/html','app.js':'text/javascript','style.css':'text/css','favicon.svg':'image/svg+xml'};
+    const mime={'index.html':'text/html','app.js':'text/javascript','address-autocomplete.js':'text/javascript','style.css':'text/css','favicon.svg':'image/svg+xml'};
     return new Response(assets[file],{headers:{'Content-Type':mime[file]+'; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",'Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','X-Content-Type-Options':'nosniff'}});
   }
   const origin=request.headers.get('Origin');
   if((origin&&origin!==url.origin)||request.headers.get('Sec-Fetch-Site')==='cross-site'||request.headers.get('X-MVP-Client')!=='dashboard')return reply({error:'Use this dashboard from the same origin.'},403);
+  if(path==='/api/addresses/search'&&request.method==='GET'){
+    try{return reply(await addressSearch(url.searchParams.get('q')||''));}
+    catch(error){return reply({error:error.message},error.status||502);}
+  }
   try{
     const config=runtimeConfig(env,url.origin);
     if(!config){

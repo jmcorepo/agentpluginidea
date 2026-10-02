@@ -6,6 +6,7 @@ RUN --mount=type=secret,id=proxy_ca \
     if [ -f /run/secrets/proxy_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/proxy_ca; fi; npm ci
 COPY tsconfig.json ./
 COPY src ./src
+COPY shared ./shared
 RUN npm run build
 
 FROM ${NODE_IMAGE}
@@ -16,6 +17,7 @@ RUN --mount=type=secret,id=proxy_ca \
     npm ci --omit=dev && npx playwright install --with-deps chromium && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY public ./public
+COPY shared ./shared
 ENV HOST=0.0.0.0 PORT=3000 DATA_DIR=/data BROWSER_HEADLESS=true
 RUN mkdir /data
 EXPOSE 3000

@@ -9,6 +9,11 @@ let calls=[],loginCount=0,unauthorizedOnce=false,statusLockedOnce=false,loginFai
 const originalFetch=globalThis.fetch;
 globalThis.fetch=async(url,options)=>{
  const target=String(url),headers=new Headers(options.headers);
+ if(target.startsWith('https://photon.komoot.io/api/')){
+  assert.equal(headers.get('Cookie'),null);assert.equal(headers.get('Authorization'),null);
+  const u=new URL(target);assert.equal(u.searchParams.get('countrycode'),'US');
+  return new Response(JSON.stringify({features:[{type:'Feature',geometry:{type:'Point',coordinates:[-77.03,38.90]},properties:{countrycode:'US',osm_type:'N',osm_id:1,housenumber:'1600',street:'Pennsylvania Avenue Northwest',city:'Washington',state:'District of Columbia',postcode:'20500'}}]}),{headers:{'Content-Type':'application/json'}});
+ }
  calls.push({target,method:options.method,headers,body:options.body});
  assert.equal(headers.get('Origin'),'https://runtime.test');assert.equal(headers.get('X-MVP-Client'),'dashboard');
  assert.equal(options.redirect,'manual');assert.equal(headers.get('Authorization'),null);assert.equal(headers.get('OAI-Sites-Authorization'),null);
@@ -34,6 +39,8 @@ try{
  assert.equal((await call('/api/status','GET',undefined,config,{'X-MVP-Client':'foreign'})).status,403);
  assert.equal((await call('/api/status','GET',undefined,config,{'Sec-Fetch-Site':'cross-site'})).status,403);
  assert.equal(calls.length,0);
+ response=await call('/api/addresses/search?q=1600%20Pennsylvania','GET',undefined,{});assert.equal(response.status,200);const addresses=await response.json();assert.equal(addresses.suggestions[0].label,'1600 Pennsylvania Avenue Northwest, Washington, DC 20500');assert.equal(loginCount,0,'Address lookup works without browser runtime or login');
+ assert.equal((await call('/api/addresses/search?q=aa','GET',undefined,{})).status,200);
  const statuses=await Promise.all([call('/api/status'),call('/api/status')]);assert.equal(loginCount,1,'Concurrent requests share one private login');
  for(const r of statuses){assert.equal(r.headers.get('Set-Cookie'),null);const s=await r.json();assert.equal(s.runtimeConnected,true);assert.equal(s.authRequired,false);assert.equal(s.mode,'automatic-browser');}
  const rideRequest={pickup:'Fixture origin',destination:'Fixture destination',passengers:2,serviceClass:'standard'};
@@ -48,5 +55,5 @@ try{
  const before=calls.length;for(const env of [{...config,RUNTIME_URL:'http://runtime.test'},{...config,RUNTIME_URL:origin},{...config,RUNTIME_URL:'https://runtime.test/subpath'},{...config,RUNTIME_PASSWORD:'short'}])assert.equal((await call('/api/status','GET',undefined,env)).status,503);assert.equal(calls.length,before);
  response=await worker.fetch(new Request(origin+'/'),{});assert.equal(response.status,200);const html=await response.text();assert.match(html,/restaurantAddress/);assert.doesNotMatch(html,/manual-form|manual-panel/);
  response=await worker.fetch(new Request(origin+'/app.js'),{});assert.equal(response.status,200);assert.match(await response.text(),/cloud-runtime-disconnected/);
- console.log('Cloud proxy contracts passed: disconnected state, same-origin guards, cached private authentication, job/body/query/binary relay, cookie stripping, auth recovery and fail-closed errors. No live requests or D1 writes.');
+ console.log('Cloud contracts passed: standalone real-service address lookup handler (fixture response), disconnected state, same-origin guards, cached private authentication, job/body/query/binary relay, cookie stripping, auth recovery and fail-closed errors. No live requests or D1 writes.');
 }finally{globalThis.fetch=originalFetch;}

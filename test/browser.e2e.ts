@@ -73,6 +73,7 @@ async function start() {
     password,
     vault,
     browser: fixturePool(),
+    addressFetcher: async()=>({ok:true,json:async()=>({features:[{type:'Feature',geometry:{type:'Point',coordinates:[-87.62,41.88]},properties:{countrycode:'US',osm_type:'N',osm_id:1,housenumber:'123',street:'Main Street',city:'Chicago',state:'Illinois',postcode:'60601'}}]})}),
   });
   app.server.listen(port, "127.0.0.1");
   await once(app.server, "listening");
@@ -154,6 +155,17 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   await unlock(page);
   const base = `http://127.0.0.1:${port}`;
+  assert.equal((await fetch(base+"/health")).status,200);
+  const addressResponse=await api(page,"/api/addresses/search?q=123%20Main");
+  assert.equal(addressResponse.status,200);
+  assert.equal(addressResponse.body.suggestions[0].label,"123 Main Street, Chicago, IL 60601");
+  assert.equal((await api(page,"/api/addresses/search?q="+"a".repeat(201))).status,400);
+  await page.locator('#rides-form [name=pickup]').fill('123 Main');
+  await page.getByRole('option',{name:'123 Main Street, Chicago, IL 60601',exact:true}).waitFor();
+  await page.locator('#rides-form [name=pickup]').press('ArrowDown');
+  await page.locator('#rides-form [name=pickup]').press('Enter');
+  assert.equal(await page.locator('#rides-form [name=pickup]').inputValue(),'123 Main Street, Chicago, IL 60601');
+
   assert.equal((await fetch(base + "/api/comparisons")).status, 403);
   assert.equal(
     (
