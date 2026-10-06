@@ -6,8 +6,11 @@ import {AgentComparisons} from './agent-comparison.js';
 /** Anonymous computation only: no provider browser, vault, account reads, or trip storage. */
 export function createMcpHandler(origin:string) {
   const allowed=new URL(origin),comparisons=new AgentComparisons();
+  // ChatGPT may send its own Origin during MCP discovery. Keep dashboard
+  // access rules separate: this handler exposes anonymous calculation tools only.
+  const clientOrigins=new Set([allowed.origin,'https://chatgpt.com']);
   return async(req:IncomingMessage,res:ServerResponse)=>{
-    if(req.headers.host!==allowed.host || req.headers.origin && req.headers.origin!==allowed.origin) {
+    if(req.headers.host!==allowed.host || req.headers.origin && !clientOrigins.has(req.headers.origin)) {
       res.writeHead(403);res.end('Origin not allowed.');return;
     }
     if(req.method!=='POST') {res.writeHead(405,{Allow:'POST'});res.end();return;}

@@ -6,7 +6,7 @@ import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {InMemoryTransport} from '@modelcontextprotocol/sdk/inMemory.js';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
-import {createServer} from 'node:http';
+import {createServer,request} from 'node:http';
 import type {AddressInfo} from 'node:net';
 import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import {createMcpHandler} from '../src/mcp-handler.js';
@@ -74,12 +74,20 @@ test('hosted HTTP handler shares no browser access and completes stateless MCP c
   const origin=`http://127.0.0.1:${port}`;handler=createMcpHandler(origin);
   const client=new Client({name:'http-test',version:'1'});
   try {
-    await client.connect(new StreamableHTTPClientTransport(new URL(origin+'/mcp')));
+    await client.connect(new StreamableHTTPClientTransport(new URL(origin+'/mcp'),{
+      requestInit:{headers:{Origin:'https://chatgpt.com'}},
+    }));
     const p=await client.callTool({name:'prepare_ride_comparison',arguments:input});
     assert.ok(!p.isError);
     const r=await client.callTool({name:'finish_ride_comparison',arguments:{comparisonId:p.structuredContent!.comparisonId,observations:[{provider:'uber',status:'unavailable',reason:'Fixture: blocked'},{provider:'lyft',status:'unavailable',reason:'Fixture: blocked'}]}});
     assert.equal(r.structuredContent!.status,'incomplete');
     assert.equal((await fetch(origin+'/mcp',{method:'POST',headers:{Origin:'https://example.com'}})).status,403);
+    assert.equal((await fetch(origin+'/mcp',{method:'POST',headers:{Origin:'https://chatgpt.com.evil.test'}})).status,403);
+    const badHost=await new Promise<number|undefined>((resolve,reject)=>{
+      const req=request(origin+'/mcp',{method:'POST',headers:{Host:'evil.test',Origin:'https://chatgpt.com'}},res=>{res.resume();res.on('end',()=>resolve(res.statusCode));});
+      req.on('error',reject);req.end();
+    });
+    assert.equal(badHost,403);
     assert.equal((await fetch(origin+'/mcp')).status,405);
   } finally {await client.close();await new Promise<void>((r,j)=>http.close(e=>e?j(e):r()));}
 });

@@ -1,7 +1,20 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "switchboard",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Guide the host browser through ride comparisons and validate observed quotes with Switchboard.",
-  "repository": "https://github.com/jmcorepo/agentpluginidea"
+  "repository": "https://github.com/jmcorepo/agentpluginidea",
+  "author": { "name": "John McCarthy" },
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Switchboard",
+        "shortDescription": "Compare ride prices and times",
+        "longDescription": "Experimental Uber and Lyft comparison workflow using the host browser and Switchboard's quote consistency checks. Requires browser access and provider sign-in; does not book rides or compare food orders.",
+        "developerName": "John McCarthy",
+        "category": "Productivity",
+        "defaultPrompt": "Compare Uber and Lyft for one standard ride. Ask for my pickup and destination, then check both live prices and times. Do not book."
+      }
+    }
+  }
 }

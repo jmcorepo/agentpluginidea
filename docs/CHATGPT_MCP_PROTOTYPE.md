@@ -17,9 +17,11 @@ cannot import them, check their connection status, or guarantee their lifetime.
 
 From the repository, run `npm ci`, then `npm run mcp:http`. The endpoint is
 `http://127.0.0.1:3037/mcp`. `npm run mcp` provides stdio for local MCP clients.
-The `plugin/` directory includes the portable plugin manifest, local HTTP MCP
-mapping and browsing skill. It is an authoring package, not an installed or
-published ChatGPT plugin. A phone or remote ChatGPT backend cannot reach the
+The `plugin/` directory includes the portable plugin manifest, hosted HTTP MCP
+mapping and browsing skill. A private account copy was saved on October 6, 2026:
+[Switchboard](https://chatgpt.com/plugins/plugins_6ac482d16f5c8191820235a10fa0a8f3),
+version 0.1.1. Account creation is verified; installation, MCP connection and
+phone behavior still require host testing. A phone or remote ChatGPT backend cannot reach the
 Mac's loopback address. Installing only the MCP does not install the skill.
 
 Use the official MCP Inspector to discover the two tools and exercise a plan
@@ -66,6 +68,10 @@ Do not substitute a local fixture run, web-search result, or Render browser test
 
 ## Connect the hosted test in ChatGPT
 
+The private plugin link above includes both the skill and the remote server
+configuration. It is the first account-level installation path to test. Do not
+create another Switchboard connection unless this path cannot connect its tools.
+
 After deployment and live MCP validation, open ChatGPT Plugins, choose Add custom
 MCP server, use the hosted `/mcp` URL, choose no authentication for these two
 calculation-only tools, and Create as a plugin. Complete the account warning
@@ -82,3 +88,21 @@ installation and phone availability still require validation. The MCP exposes
 submission-time skill import. A custom MCP registration alone does not guarantee
 that the packaged skill is installed. The server also provides initialization
 instructions and a plan so an enabled connection can be tested directly.
+
+## Connection diagnosis on October 6, 2026
+
+The supplied screenshot contains the correct `/mcp` URL and reports
+"Couldn't discover OAuth settings." These calculation-only tools advertise
+`noauth`; they do not implement OAuth or connect provider accounts. Do not invent
+OAuth endpoints or enter provider credentials to resolve that message.
+
+A separate compatibility defect was reproduced: initialize requests with
+`Origin: https://chatgpt.com` returned 403, while requests without Origin worked.
+The handler now accepts the exact ChatGPT origin as well as its own origin,
+retains host validation, and rejects untrusted origins. Regression checks use
+the actual HTTP MCP client with ChatGPT's Origin. This is a verified defect;
+it has not been established as the cause of the screenshot's OAuth error.
+
+GET `/mcp` returns 405 because this anonymous stateless transport accepts POST.
+Opening the endpoint as a website does not test MCP initialization. Successful
+SDK calls alone also do not establish that ChatGPT installation works.
