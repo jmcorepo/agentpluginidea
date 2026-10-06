@@ -1,0 +1,21 @@
+{
+  "interface": {
+    "displayName": "Switchboard",
+    "shortDescription": "Compare food totals and times",
+    "longDescription": "Compare the same Uber Eats and DoorDash basket, final totals, applied discounts and delivery windows. Uses authorized provider tools or the host browser and checks quote consistency. Requires available provider access and sign-in; does not order or book. Includes an experimental Uber/Lyft ride workflow.",
+    "developerName": "John McCarthy",
+    "category": "Productivity",
+    "defaultPrompt": "Compare Uber and Lyft for one standard ride. Ask for my pickup and destination, then check both live prices and times. Do not book.",
+    "capabilities": []
+  },
+  "name": "switchboard",
+  "version": "0.2.0",
+  "description": "Compare exact Uber Eats and DoorDash food checkouts and ride quotes using authorized provider tools or the host browser.",
+  "author": {
+    "name": "John McCarthy"
+  },
+  "keywords": [],
+  "repository": "https://github.com/jmcorepo/agentpluginidea",
+  "skills": "./skills",
+  "mcpServers": "./.mcp.json"
+}

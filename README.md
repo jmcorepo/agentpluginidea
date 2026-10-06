@@ -1,6 +1,8 @@
 # Rides and food comparison
 
-A local automatic-comparison prototype for your Uber, Lyft, DoorDash and Uber Eats accounts. Enter a route or exact food basket once; adapters prepare the provider pages and accept prices only when independently observed details match. The dashboard uses plain forms and tables. No manual prices, API keys, purchases or MCP integration.
+Switchboard includes an experimental ChatGPT plugin for comparing the same Uber Eats and DoorDash basket, plus standard Uber/Lyft rides. The plugin guides authorized provider tools or the host browser to collect quotes, then the MCP validates and ranks the observations. Start with [the food comparison test guide](docs/CHATGPT_FOOD_COMPARISON.md). The MCP itself does not browse, sign in, order or book.
+
+The original dashboard below is a separate browser-adapter prototype. Enter a route or exact food basket once; adapters prepare provider pages and accept prices only when independently observed details match. The dashboard uses plain forms and tables. No purchases are implemented.
 
 **Current provider layouts and signed-in accounts still require live testing on your computer.** Local browser-fixture tests prove the implemented workflow and rejection checks; they do not establish that every current provider page supports these selectors or that commercial automation is permitted.
 

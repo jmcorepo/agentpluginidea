@@ -1,16 +1,18 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "switchboard",
-  "version": "0.1.1",
-  "description": "Guide the host browser through ride comparisons and validate observed quotes with Switchboard.",
+  "version": "0.2.0",
+  "description": "Compare exact Uber Eats and DoorDash food checkouts and ride quotes using authorized provider tools or the host browser.",
   "repository": "https://github.com/jmcorepo/agentpluginidea",
-  "author": { "name": "John McCarthy" },
+  "author": {
+    "name": "John McCarthy"
+  },
   "extensions": {
     "com.openai": {
       "interface": {
         "displayName": "Switchboard",
-        "shortDescription": "Compare ride prices and times",
-        "longDescription": "Experimental Uber and Lyft comparison workflow using the host browser and Switchboard's quote consistency checks. Requires browser access and provider sign-in; does not book rides or compare food orders.",
+        "shortDescription": "Compare food totals and times",
+        "longDescription": "Compare the same Uber Eats and DoorDash basket, final totals, applied discounts and delivery windows. Uses authorized provider tools or the host browser and checks quote consistency. Requires available provider access and sign-in; does not order or book. Includes an experimental Uber/Lyft ride workflow.",
         "developerName": "John McCarthy",
         "category": "Productivity",
         "defaultPrompt": "Compare Uber and Lyft for one standard ride. Ask for my pickup and destination, then check both live prices and times. Do not book."

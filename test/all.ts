@@ -1,6 +1,7 @@
 // Run in one process on supported Node versions without shell-specific globbing.
 await import('./core.test.js');
 await import('./agent-comparison.test.js');
+await import('./agent-food-comparison.test.js');
 await import('./browser-routing.test.js');
 await import('./server-access.test.js');
 await import('./eats.test.js');

@@ -52,13 +52,20 @@ test('real MCP client discovers tools and completes a two-call comparison',async
   const [ct,st]=InMemoryTransport.createLinkedPair();
   try {
     await Promise.all([server.connect(st),client.connect(ct)]);
-    const tools=await client.listTools();assert.deepEqual(tools.tools.map(t=>t.name),['prepare_ride_comparison','finish_ride_comparison']);
+    const tools=await client.listTools();assert.deepEqual(tools.tools.map(t=>t.name),['prepare_ride_comparison','finish_ride_comparison','prepare_food_comparison','finish_food_comparison']);
     const manifest=await client.request({method:'skills/list',params:{}},z.object({skills:z.array(z.any())}));
     assert.equal(manifest.skills[0].frontmatter.name,'compare-rides');
     const resource=await client.readResource({uri:manifest.skills[0].uri});
     const text=(resource.contents[0] as {text:string}).text;
     assert.equal(manifest.skills[0].resources[0].digest,`sha256:${createHash('sha256').update(text).digest('hex')}`);
     assert.match(text,/finish_ride_comparison/);
+    assert.equal(manifest.skills[1].frontmatter.name,'compare-food');
+    const foodResource=await client.readResource({uri:manifest.skills[1].uri});
+    const foodText=(foodResource.contents[0] as {text:string}).text;
+    assert.equal(manifest.skills[1].resources[0].digest,`sha256:${createHash('sha256').update(foodText).digest('hex')}`);
+    assert.match(foodText,/finish_food_comparison/);
+    const foodManifest=await client.request({method:'skills/get',params:{uri:manifest.skills[1].uri}},z.object({skill:z.any()}));
+    assert.deepEqual(foodManifest.skill,manifest.skills[1]);
     const p=await client.callTool({name:'prepare_ride_comparison',arguments:input});assert.equal(p.isError,undefined);
     const comparisonId=p.structuredContent!.comparisonId;
     const r=await client.callTool({name:'finish_ride_comparison',arguments:{comparisonId,observations:[observation('uber'),observation('lyft')]}});
@@ -81,6 +88,10 @@ test('hosted HTTP handler shares no browser access and completes stateless MCP c
     assert.ok(!p.isError);
     const r=await client.callTool({name:'finish_ride_comparison',arguments:{comparisonId:p.structuredContent!.comparisonId,observations:[{provider:'uber',status:'unavailable',reason:'Fixture: blocked'},{provider:'lyft',status:'unavailable',reason:'Fixture: blocked'}]}});
     assert.equal(r.structuredContent!.status,'incomplete');
+    const fp=await client.callTool({name:'prepare_food_comparison',arguments:{address:input.pickup,restaurant:'Test Kitchen',restaurantAddress:input.destination,items:[{name:'Rice bowl',quantity:1}],tipCents:300}});
+    assert.ok(!fp.isError);
+    const fr=await client.callTool({name:'finish_food_comparison',arguments:{comparisonId:fp.structuredContent!.comparisonId,observations:[{provider:'ubereats',status:'unavailable',reason:'Fixture: login required'},{provider:'doordash',status:'unavailable',reason:'Fixture: login required'}]}});
+    assert.ok(!fr.isError);assert.equal(fr.structuredContent!.status,'incomplete');
     assert.equal((await fetch(origin+'/mcp',{method:'POST',headers:{Origin:'https://example.com'}})).status,403);
     assert.equal((await fetch(origin+'/mcp',{method:'POST',headers:{Origin:'https://chatgpt.com.evil.test'}})).status,403);
     const badHost=await new Promise<number|undefined>((resolve,reject)=>{
