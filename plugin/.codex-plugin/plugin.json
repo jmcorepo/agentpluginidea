@@ -9,7 +9,7 @@
     "capabilities": []
   },
   "name": "switchboard",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Compare exact Uber Eats and DoorDash food checkouts and ride quotes using authorized provider tools or the host browser.",
   "author": {
     "name": "John McCarthy"

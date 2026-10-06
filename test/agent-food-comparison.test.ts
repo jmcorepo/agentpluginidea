@@ -46,12 +46,37 @@ test('currency requires observed evidence, supports actual U.S. checkout context
   assert.equal(compare({currencyContext:{kind:'explicit_currency',evidence:'USD and CAD'}}).status,'incomplete');
 });
 test('checkout evidence rejects subtotals, wrong amounts, omitted tips and conflicting fee arithmetic',()=>{
-  for(const change of [{totalEvidence:'Subtotal $23.00 USD'},{totalEvidence:'Subtotal $23.00 USD\nTotal $26.00 USD'},{totalEvidence:'Total $22.00 USD'},{totalIncludesTip:false},{breakdown:{...foodObservation('ubereats').breakdown,serviceFeeCents:201}}]) assert.equal(compare(change).status,'incomplete');
+  for(const change of [{totalEvidence:'Subtotal $23.00 USD'},{totalEvidence:'Subtotal $23.00 USD\nTotal $26.00 USD'},{totalEvidence:'Total $22.00 USD'},{totalEvidence:'Total before tip $23.00 USD'},{totalEvidence:'Total excluding tip $23.00 USD'},{totalEvidence:'Total $23.00; Final Total $24.00'},{totalIncludesTip:false},{breakdown:{...foodObservation('ubereats').breakdown,serviceFeeCents:201}}]) assert.equal(compare(change).status,'incomplete');
   const r=compare({breakdown:{subtotalCents:1500,taxCents:null,deliveryFeeCents:null,serviceFeeCents:null,otherFeesCents:null,discountCents:null}});
   assert.equal(r.status,'comparable');assert.equal(r.quotes[0]?.breakdown.taxCents,null);
   // Applied membership discount is counted once and shown, rather than inferred.
   const b=foodObservation('ubereats').breakdown;
   assert.equal(compare({totalCents:2200,totalEvidence:'Total $22.00 USD',breakdown:{...b,discountCents:100},benefits:['Applied $1 membership discount']}).status,'comparable');
+});
+test('checkout labels independently distinguish before-tip and final totals on the same line',()=>{
+  assert.equal(compare({totalEvidence:'Order total $20.00 before tip; Add a tip $3.00; final Total $23.00.'}).status,'comparable');
+  assert.equal(compare({totalEvidence:'Order total $20.00 before tip; Add a tip $3.00; final Total $22.00.'}).status,'incomplete');
+});
+test('DoorDash final order-button amount is read only on its official checkout, without bypassing tip checks',()=>{
+  const checkout={sourceUrl:'https://www.doordash.com/consumer/checkout/',totalEvidence:'Place Order $26.00'};
+  assert.equal(compare({},checkout).status,'comparable');
+  assert.equal(compare({},{...checkout,totalEvidence:'Total before tip $23.00; Other tip amount 3.00; Place Order $26.00'}).status,'comparable');
+  assert.equal(compare({},{...checkout,sourceUrl:'https://www.doordash.com/store/test-kitchen'}).status,'incomplete');
+  assert.equal(compare({sourceUrl:'https://www.ubereats.com/checkout',totalEvidence:'Place Order $23.00'}).status,'incomplete');
+  assert.equal(compare({},{...checkout,totalIncludesTip:false}).status,'incomplete');
+  assert.equal(compare({},{...checkout,totalEvidence:'Place Order $25.00'}).status,'incomplete');
+});
+test('replay of food-test totals returns DoorDash saving with no fastest claim, even when gathered before preparation',()=>{
+  // Preserve the amounts, labels and timing from the supplied test; use generic
+  // addresses and evidence, never its account data or encrypted comparison ID.
+  const c=new AgentFoodComparisons(()=>now),p=c.prepare({...foodInput,tipCents:105});
+  const capture=new Date(now-36000).toISOString();
+  const r=c.finish({comparisonId:p.comparisonId,observations:[
+    foodObservation('ubereats',{sourceUrl:'https://www.ubereats.com/checkout',capturedAt:capture,tipCents:105,totalCents:1704,totalEvidence:'Order total $15.99 before tip; Add a tip $1.05; final Total $17.04.',breakdown:{subtotalCents:1048,taxCents:73,deliveryFeeCents:199,serviceFeeCents:null,otherFeesCents:279,discountCents:0},etaMinutesMin:12,etaMinutesMax:32,etaEvidence:'Standard 12–32 min'}),
+    foodObservation('doordash',{sourceUrl:'https://www.doordash.com/consumer/checkout/',capturedAt:capture,tipCents:105,totalCents:1575,totalEvidence:'Total before tip $14.70; Other tip amount 1.05; Place Order $15.75.',breakdown:{subtotalCents:1048,taxCents:73,deliveryFeeCents:299,serviceFeeCents:300,otherFeesCents:0,discountCents:250},etaMinutesMin:14,etaMinutesMax:24,etaEvidence:'Standard 14–24 min',benefits:['Applied $2.50 delivery discount']}),
+  ]});
+  assert.equal(r.status,'comparable');assert.deepEqual(r.ranking,{cheapest:'doordash',fastest:null});
+  assert.equal(r.priceDifferenceCents,129);assert.equal(r.deliveryEstimatesOverlap,true);assert.equal(r.recommendation?.provider,'doordash');
 });
 test('overlapping or missing delivery windows and tied prices produce no false fastest claim',()=>{
   const overlap=compare({etaMinutesMin:25,etaMinutesMax:40});assert.equal(overlap.ranking.fastest,null);assert.equal(overlap.deliveryEstimatesOverlap,true);
@@ -68,7 +93,7 @@ test('blocked or omitted provider is reported with no cross-provider winner',()=
   assert.equal(c.finish({comparisonId:p.comparisonId,observations:[foodObservation('ubereats')]}).excluded[0]?.provider,'doordash');
 });
 test('food rejects stale quotes, non-provider sources and leaked query strings',()=>{
-  for(const change of [{capturedAt:new Date(now-16000).toISOString()},{capturedAt:new Date(now+16000).toISOString()},{sourceUrl:'https://doordash.com.evil.test/store'},{sourceUrl:'https://www.ubereats.com/store?token=secret'},{sourceUrl:'https://auth.ubereats.com/'}]) assert.equal(compare(change).status,'incomplete');
+  for(const change of [{capturedAt:new Date(now-900000).toISOString()},{capturedAt:new Date(now+16000).toISOString()},{sourceUrl:'https://doordash.com.evil.test/store'},{sourceUrl:'https://www.ubereats.com/store?token=secret'},{sourceUrl:'https://auth.ubereats.com/'}]) assert.equal(compare(change).status,'incomplete');
   const c=new AgentFoodComparisons(()=>now+500),p=c.prepare(foodInput);
   assert.equal(c.finish({comparisonId:p.comparisonId,observations:[foodObservation('ubereats'),foodObservation('doordash')]}).status,'comparable');
 });

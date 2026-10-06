@@ -28,7 +28,7 @@ const observed=z.object({
   sourceUrl:z.string().url().max(1000),capturedAt:z.string().datetime(),
   address,restaurant:text,restaurantAddress:address,items:z.array(item).min(1).max(30),
   deliverySpeed:z.literal('standard'),tipCents:cents,currencyContext,
-  totalCents:cents,totalIncludesTip:z.boolean(),totalEvidence:z.string().trim().min(3).max(1000),
+  totalCents:cents,totalIncludesTip:z.boolean(),totalEvidence:z.string().trim().min(3).max(1000).describe('Actual final checkout label and amount, including tip. DoorDash Place Order amount is supported on its checkout page; read it without clicking. Keep before-tip figures distinct from the final amount.'),
   breakdown:z.object({subtotalCents:cents.nullable(),taxCents:cents.nullable(),deliveryFeeCents:cents.nullable(),serviceFeeCents:cents.nullable(),otherFeesCents:cents.nullable(),discountCents:cents.nullable()}).strict(),
   etaMinutesMin:z.number().min(0).max(1440).nullable(),etaMinutesMax:z.number().min(0).max(1440).nullable(),
   etaEvidence:z.string().trim().max(1000),
@@ -59,13 +59,13 @@ function currencyReason(o:FoodObservation):string|null {
   const state=/\b(?:AL|AK|AZ|AR|CA|CO|CT|DE|DC|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|PR)(?:\s+\d{5}(?:-\d{4})?)?(?:,?\s+(?:United States(?: of America)?|USA|US))?\s*$/i;
   return usCountry&&state.test(o.address)&&state.test(o.restaurantAddress)&&/\$\s*\d/.test(c.priceEvidence)&&!foreign.test(c.countryEvidence+' '+c.priceEvidence)?null:'Collect observed U.S. country context and dollar pricing, plus the state in both provider addresses. Do not infer country from the requested address.';
 }
-function observationReason(o:FoodObservation,request:z.infer<typeof foodPlanSchema>,createdAt:number,now:number):string|null {
+function observationReason(o:FoodObservation,request:z.infer<typeof foodPlanSchema>,now:number):string|null {
   const url=new URL(o.sourceUrl),domain=o.provider==='ubereats'?'ubereats.com':'doordash.com';
   if(url.protocol!=='https:'||!(url.hostname===domain||url.hostname.endsWith('.'+domain))||url.username||url.password||url.search||url.hash||/^(?:auth|identity|account)\./.test(url.hostname)) return 'Expected a clean official HTTPS provider quote URL, excluding authentication pages, credentials and query parameters.';
   const captured=Date.parse(o.capturedAt);
-  // Host clocks and ISO timestamps rounded to seconds can slightly precede the
-  // server plan. Apply the same small tolerance used for future capture times.
-  if(captured<createdAt-15000||captured>now+15000||now-captured>=lifetime) return 'Quote is stale, predates this comparison, or has a future capture time. Refresh it.';
+  // Fresh matching checkout observations may be gathered before preparation.
+  // Their capture age and the encrypted plan lifetime are separate checks.
+  if(captured>now+15000||now-captured>=lifetime) return 'Quote is stale or has a future capture time. Re-read the checkout and use its actual capture time.';
   const currency=currencyReason(o);if(currency) return currency;
   if(!foodAddressMatches(request.address,o.address)) return 'Provider delivery address does not match the request.';
   if(!foodAddressMatches(request.restaurantAddress,o.restaurantAddress)) return 'Provider restaurant branch does not match the requested branch.';
@@ -73,14 +73,21 @@ function observationReason(o:FoodObservation,request:z.infer<typeof foodPlanSche
   const quote={provider:o.provider,sector:'eats',observedContext:{kind:'eats',source:o.source==='connected_tool'?'provider_api':'provider_dom',restaurant:o.restaurant,restaurantAddress:o.restaurantAddress,address:o.address,items:o.items,deliverySpeed:o.deliverySpeed,tipCents:o.tipCents,currencyEvidence:'USD',evidence:o.evidence}} as Quote;
   const context=verifyQuoteContext(quote,{...request,address:o.address,restaurantAddress:o.restaurantAddress} as FoodRequest);if(context) return context;
   if(!o.totalIncludesTip) return 'The quoted total must include the common requested tip.';
-  // Associate the label with the first monetary amount on that same line. A
-  // matching subtotal elsewhere must not disguise a different final total.
-  const totalLines=o.totalEvidence.match(/\b(?:total|you(?:'|’)ll pay|amount due|pay now)\b[^\r\n]{0,150}/ig)??[];
-  const totalMatches=totalLines.some(line=>{
+  // Read each label independently, so a before-tip total cannot swallow a
+  // later final amount. Reading a DoorDash order button never activates it.
+  const labels=[...o.totalEvidence.matchAll(/\b(?:total|you(?:'|’)ll pay|amount due|pay now|place order)\b/ig)];
+  const finalAmounts:number[]=[];
+  for(let i=0;i<labels.length;i++) {
+    const label=labels[i]!,start=label.index!+label[0].length;
+    const orderButton=/^place order$/i.test(label[0]);
+    if(orderButton&&(o.provider!=='doordash'||!/(?:^|\/)checkout(?:\/|$)/i.test(url.pathname))) continue;
+    const end=Math.min(labels[i+1]?.index??o.totalEvidence.length,start+150);
+    const line=o.totalEvidence.slice(start,end).split(/[\r\n;]/)[0]!;
+    if(/\b(?:before|excluding|without)\s+(?:(?:any|all|your|the)\s+)?(?:tips?|tax(?:es)?|fees?|discounts?)\b/i.test(line)) continue;
     const amount=line.replace(/,/g,'').match(/(?:US\$|\$|USD)\s*(\d+\.\d{2})(?!\d)|(\d+\.\d{2})\s*(?:USD|US\$)(?!\w)/i);
-    return amount!==null&&Math.round(Number(amount[1]??amount[2])*100)===o.totalCents;
-  });
-  if(!totalMatches) return 'Collect the displayed final checkout total label and matching amount; menu prices and subtotals are insufficient.';
+    if(amount) finalAmounts.push(Math.round(Number(amount[1]??amount[2])*100));
+  }
+  if(!finalAmounts.length||finalAmounts.some(n=>n!==o.totalCents)) return 'Collect the actual final checkout label and matching amount, including tip. DoorDash Place Order is supported on its checkout page; read without clicking. Subtotals, before-tip amounts and conflicting final totals are insufficient.';
   const b=o.breakdown;
   if(Object.values(b).every(n=>n!==null)) {
     const calculated=b.subtotalCents!+b.taxCents!+b.deliveryFeeCents!+b.serviceFeeCents!+b.otherFeesCents!+o.tipCents-b.discountCents!;
@@ -100,7 +107,7 @@ export class AgentFoodComparisons {
     return {comparisonId:Buffer.concat([nonce,cipher.getAuthTag(),encrypted]).toString('base64url'),request,expiresAt:new Date(now+lifetime).toISOString(),
       providers:[{provider:'ubereats',url:'https://www.ubereats.com/'},{provider:'doordash',url:'https://www.doordash.com/'}],
       collect:['independently observed merchant and exact branch','delivery address','all items, quantities, modifiers and notes','standard delivery and common tip','final checkout total including tip','explicit USD, complete U.S. addresses, or observed provider U.S. country context','fee and discount breakdown (unknown fields stay null)','delivery window and evidence','applied benefits only','source URL, fresh capture time and minimal evidence'],
-      instructions:'Check BOTH Uber Eats and DoorDash for this exact basket using authorized connected tools when they expose checkout data, otherwise the host browser. Preserve existing unrelated carts. Resume sign-in only when necessary. Never submit an order, pay, change payment details or invent missing information. Submit both results once to finish_food_comparison. Native provider access is not supplied by this MCP.',
+      instructions:'Check BOTH Uber Eats and DoorDash for this exact basket using authorized connected tools when they expose checkout data, otherwise the host browser. Fresh matching observations may predate this plan, but must be captured within 15 minutes. Read the final total including tip; DoorDash may display it on Place Order, which must never be clicked. Preserve existing unrelated carts. Resume sign-in only when necessary. Never submit an order, pay, change payment details or invent missing information. Submit both results once to finish_food_comparison. Native provider access is not supplied by this MCP.',
       evidencePolicy:'Agent-reported page or connected-tool observations; Switchboard checks consistency, not independent source authenticity.'};
   }
   finish(input:unknown) {
@@ -115,7 +122,7 @@ export class AgentFoodComparisons {
     if(new Set(observations.map(o=>o.provider)).size!==observations.length) throw new Error('Duplicate provider observations are not allowed.');
     const accepted:FoodObservation[]=[],excluded:{provider:string;reason:string}[]=[];
     for(const o of observations) {
-      const reason=o.status==='unavailable'?o.reason:observationReason(o,plan.request,plan.createdAt,now);
+      const reason=o.status==='unavailable'?o.reason:observationReason(o,plan.request,now);
       if(reason) excluded.push({provider:o.provider,reason});else if(o.status==='observed') accepted.push(o);
     }
     for(const p of plan.request.providers) if(!observations.some(o=>o.provider===p)) excluded.push({provider:p,reason:'No checkout observation supplied.'});
