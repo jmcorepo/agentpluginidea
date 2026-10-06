@@ -1,4 +1,4 @@
-import {chromium, type Browser, type BrowserContext, type BrowserContextOptions, type Page} from 'playwright';
+import {chromium, type Browser, type BrowserContext, type BrowserContextOptions, type Page, type Request} from 'playwright';
 import {existsSync} from 'node:fs';
 import {providers, type Provider, type ProviderState} from './domain.js';
 import {Vault} from './vault.js';
@@ -11,6 +11,26 @@ const families: Record<Provider, string[]> = {
   uber: ['uber.com'], lyft: ['lyft.com'], ubereats: ['ubereats.com'], doordash: ['doordash.com'],
 };
 const authHosts = ['accounts.google.com', 'appleid.apple.com'];
+export function allowedBrowserRequest(provider: Provider, request: Request): boolean {
+  let url: URL;
+  try {url = new URL(request.url());} catch {return false;}
+  if (!['http:', 'https:'].includes(url.protocol)) return true;
+  const host = url.hostname;
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') ||
+    /^[\d.:\[\]]+$/.test(host) || host === 'metadata.google.internal') return false;
+  if (request.isNavigationRequest()) {
+    // A popup's first request can arrive before Playwright creates its frame.
+    let mainFrame = true;
+    try {
+      const frame = request.frame();
+      mainFrame = frame === frame.page().mainFrame();
+    } catch {
+      // Treat frameless navigation conservatively as a top-level request.
+    }
+    if (mainFrame) return allowedProviderUrl(provider, request.url(), true);
+  }
+  return true;
+}
 const isFamily = (host: string, family: string) => host === family || host.endsWith(`.${family}`);
 export function allowedProviderUrl(provider: Provider, raw: string, includeAuth = false): boolean {
   try {
@@ -124,17 +144,8 @@ export class BrowserPool {
         const context = await browser.newContext({viewport: {width: 1280, height: 800}, locale: 'en-US',
           storageState: saved ?? undefined, serviceWorkers: 'block'});
         await context.route('**/*', async route => {
-          const request = route.request();
-          let requestUrl: URL;
-          try {requestUrl = new URL(request.url());} catch {return route.abort();}
           // Prevent browser-controlled pages from reaching the local dashboard or private addresses.
-          if (!['http:', 'https:'].includes(requestUrl.protocol)) return route.continue();
-          const host = requestUrl.hostname;
-          if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') ||
-            /^[\d.:\[\]]+$/.test(host) || host === 'metadata.google.internal') return route.abort();
-          if (request.isNavigationRequest() && request.frame() === request.frame().page().mainFrame() &&
-            !allowedProviderUrl(provider, request.url(), true)) return route.abort();
-          return route.continue();
+          return allowedBrowserRequest(provider, route.request()) ? route.continue() : route.abort();
         });
         const page = await context.newPage();
         page.setDefaultTimeout(8_000);
