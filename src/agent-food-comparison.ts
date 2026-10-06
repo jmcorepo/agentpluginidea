@@ -63,7 +63,9 @@ function observationReason(o:FoodObservation,request:z.infer<typeof foodPlanSche
   const url=new URL(o.sourceUrl),domain=o.provider==='ubereats'?'ubereats.com':'doordash.com';
   if(url.protocol!=='https:'||!(url.hostname===domain||url.hostname.endsWith('.'+domain))||url.username||url.password||url.search||url.hash||/^(?:auth|identity|account)\./.test(url.hostname)) return 'Expected a clean official HTTPS provider quote URL, excluding authentication pages, credentials and query parameters.';
   const captured=Date.parse(o.capturedAt);
-  if(captured<createdAt||captured>now+15000||now-captured>=lifetime) return 'Quote is stale, predates this comparison, or has a future capture time. Refresh it.';
+  // Host clocks and ISO timestamps rounded to seconds can slightly precede the
+  // server plan. Apply the same small tolerance used for future capture times.
+  if(captured<createdAt-15000||captured>now+15000||now-captured>=lifetime) return 'Quote is stale, predates this comparison, or has a future capture time. Refresh it.';
   const currency=currencyReason(o);if(currency) return currency;
   if(!foodAddressMatches(request.address,o.address)) return 'Provider delivery address does not match the request.';
   if(!foodAddressMatches(request.restaurantAddress,o.restaurantAddress)) return 'Provider restaurant branch does not match the requested branch.';

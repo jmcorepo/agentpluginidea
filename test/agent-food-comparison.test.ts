@@ -68,7 +68,9 @@ test('blocked or omitted provider is reported with no cross-provider winner',()=
   assert.equal(c.finish({comparisonId:p.comparisonId,observations:[foodObservation('ubereats')]}).excluded[0]?.provider,'doordash');
 });
 test('food rejects stale quotes, non-provider sources and leaked query strings',()=>{
-  for(const change of [{capturedAt:new Date(now-1).toISOString()},{capturedAt:new Date(now+16000).toISOString()},{sourceUrl:'https://doordash.com.evil.test/store'},{sourceUrl:'https://www.ubereats.com/store?token=secret'},{sourceUrl:'https://auth.ubereats.com/'}]) assert.equal(compare(change).status,'incomplete');
+  for(const change of [{capturedAt:new Date(now-16000).toISOString()},{capturedAt:new Date(now+16000).toISOString()},{sourceUrl:'https://doordash.com.evil.test/store'},{sourceUrl:'https://www.ubereats.com/store?token=secret'},{sourceUrl:'https://auth.ubereats.com/'}]) assert.equal(compare(change).status,'incomplete');
+  const c=new AgentFoodComparisons(()=>now+500),p=c.prepare(foodInput);
+  assert.equal(c.finish({comparisonId:p.comparisonId,observations:[foodObservation('ubereats'),foodObservation('doordash')]}).status,'comparable');
 });
 test('food encrypted plans expire, reject tampering, duplicates, restarts and ride tokens',()=>{
   let time=now;const c=new AgentFoodComparisons(()=>time),p=c.prepare(foodInput);
