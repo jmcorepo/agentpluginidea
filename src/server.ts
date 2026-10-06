@@ -37,6 +37,7 @@ import {
 import { compareRidesAutomatically } from "./providers/ride-flow.js";
 import { compareEatsAutomatically } from "./providers/eat-flow.js";
 import { verifyQuoteContext } from "./verification.js";
+import {createMcpHandler} from './mcp-handler.js';
 
 export interface ApplicationOptions {
   port: number;
@@ -55,6 +56,7 @@ export async function createApplication(options: ApplicationOptions) {
   const host = options.host ?? "127.0.0.1";
   const password = options.password ?? "";
   const configuredOrigin = options.origin ? new URL(options.origin) : undefined;
+  const mcpHandler=createMcpHandler(configuredOrigin?.origin ?? `http://localhost:${port}`);
   if (
     configuredOrigin &&
     (configuredOrigin.pathname !== "/" ||
@@ -439,6 +441,7 @@ export async function createApplication(options: ApplicationOptions) {
     try {
       const path = new URL(req.url || "/", "http://localhost").pathname;
       const method = req.method || "GET";
+      if(path==='/mcp') return await mcpHandler(req,res);
       if (path === "/health" && method === "GET") return send(res,200,{ok:true});
       if (!path.startsWith("/api/")) {
         const assets: Record<string, [string, string]> = {
