@@ -1,5 +1,9 @@
 # Connect the cloud dashboard
 
+## Current owner-requested test deployment
+
+The Render test deployment explicitly uses `ALLOW_UNAUTHENTICATED=true` and an empty `MVP_PASSWORD`, at the owner's request. Its public dashboard and browser controls require no login. This exposes any saved provider sessions and history to anyone who reaches the service; use it only with that access model understood. The private Sites proxy described below still requires its own connection configuration and is not changed by this setting. To restore the lock, set a private `MVP_PASSWORD` of at least 12 characters and remove the unauthenticated option.
+
 The private cloud dashboard needs a separate Node/Chromium service for provider browsing. The Site itself serves the UI and address suggestions. It cannot host the provider browser.
 
 A Render Blueprint (`render.yaml`) is included for the browser backend. It selects one Standard instance (1 CPU, 2 GB RAM), a 1 GB persistent disk mounted at `/data`, the existing Dockerfile, and the `codex/local-rides-eats-mvp` branch. Provider sessions, the vault encryption key, and history stay on that disk across service restarts. Automatic deployments are disabled, so source updates do not restart an active comparison automatically.

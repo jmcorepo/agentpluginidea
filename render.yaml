@@ -16,7 +16,9 @@ services:
       sizeGB: 1
     envVars:
       - key: MVP_PASSWORD
-        generateValue: true
+        value: ''
+      - key: ALLOW_UNAUTHENTICATED
+        value: 'true'
       - key: BROWSER_HEADLESS
         value: 'true'
       - key: HOST

@@ -42,6 +42,7 @@ export interface ApplicationOptions {
   port: number;
   host?: string;
   password?: string;
+  allowUnauthenticated?: boolean;
   origin?: string;
   vault: Vault;
   browser: BrowserPool;
@@ -74,7 +75,8 @@ export async function createApplication(options: ApplicationOptions) {
     throw new Error("A remote APP_ORIGIN requires HTTPS.");
   if (
     !["localhost", "127.0.0.1", "::1"].includes(host) &&
-    password.length < 12
+    password.length < 12 &&
+    !(options.allowUnauthenticated && !password)
   ) {
     throw new Error(
       "A non-local host requires MVP_PASSWORD with at least 12 characters. Keep provider sessions private.",
@@ -675,6 +677,7 @@ if (
     port,
     host,
     password: process.env.MVP_PASSWORD,
+    allowUnauthenticated: process.env.ALLOW_UNAUTHENTICATED === "true",
     origin: process.env.APP_ORIGIN || process.env.RENDER_EXTERNAL_URL,
     vault,
     browser: new BrowserPool(vault),
