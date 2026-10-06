@@ -1,0 +1,7 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "switchboard",
+  "version": "0.1.0",
+  "description": "Guide the host browser through ride comparisons and validate observed quotes with Switchboard.",
+  "repository": "https://github.com/jmcorepo/agentpluginidea"
+}

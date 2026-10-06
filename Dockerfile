@@ -18,6 +18,7 @@ RUN --mount=type=secret,id=proxy_ca \
 COPY --from=build /app/dist ./dist
 COPY public ./public
 COPY shared ./shared
+COPY plugin ./plugin
 ENV HOST=0.0.0.0 PORT=3000 DATA_DIR=/data BROWSER_HEADLESS=true
 RUN mkdir /data
 EXPOSE 3000
