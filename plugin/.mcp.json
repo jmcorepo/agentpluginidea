@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "switchboard": {
-      "type": "streamable-http",
-      "url": "https://agent-commerce-browser.onrender.com/mcp",
-      "headers": {}
-    }
-  }
-}

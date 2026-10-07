@@ -1,5 +1,7 @@
 # Switchboard host-browser prototype
 
+Historical MCP prototype notes: the current private plugin is the mobile candidate described in [CHATGPT_MOBILE.md](CHATGPT_MOBILE.md). Version 0.4.0 no longer bundles desktop MCP configuration. The backend remains available separately; custom developer-mode registration does not establish ordinary mobile Chat support. Use the current [food test guide](CHATGPT_FOOD_COMPARISON.md) for setup and acceptance.
+
 One user request activates `plugin/skills/compare-rides/SKILL.md`. The host calls
 `prepare_ride_comparison`, browses Uber and Lyft using its own signed-in sessions,
 and calls `finish_ride_comparison` with observed quotes. Switchboard checks the

@@ -14,12 +14,14 @@ export function createSwitchboardMcp(comparisons=new AgentComparisons(),foods=ne
     const uri=`skill://switchboard/${name}/SKILL.md`;
     const description=text.match(/^description: (.+)$/m)?.[1];
     if(!description) throw new Error(`Missing skill description: ${name}`);
-    return {text,manifest:{uri,frontmatter:{name,description},resources:[{uri,digest:`sha256:${createHash('sha256').update(text).digest('hex')}`}]}};
+    const resources=[{uri,text}];
+    if(name==='compare-food') resources.push({uri:'skill://switchboard/compare-food/references/without-mcp.md',text:readFileSync(new URL('../plugin/skills/compare-food/references/without-mcp.md',import.meta.url),'utf8')});
+    return {text,resources,manifest:{uri,frontmatter:{name,description},resources:resources.map(resource=>({uri:resource.uri,digest:`sha256:${createHash('sha256').update(resource.text).digest('hex')}`}))}};
   });
   const server=new McpServer({name:'switchboard',version:'0.3.0'},{capabilities:{extensions:{'io.modelcontextprotocol/skills':{}}},instructions:'For food comparisons, use compare-food: collect both Uber Eats and DoorDash checkouts with authorized provider tools or your host browser, then call compare_food_quotes ONCE with the exact request and both observations. It validates and returns the comparison card. The older prepare/finish flow remains supported. For rides use compare-rides and the ride tools. If provider access is unavailable, report the blocker. This MCP validates agent-reported quotes; it does not browse, connect provider accounts, order food or book rides.'});
   server.registerResource('food-comparison-card',FOOD_WIDGET_URI,{mimeType:'text/html;profile=mcp-app'},async()=>({contents:[{uri:FOOD_WIDGET_URI,mimeType:'text/html;profile=mcp-app',text:foodWidgetHtml,_meta:{ui:{prefersBorder:true,csp:{connectDomains:[],resourceDomains:[]}},'openai/widgetDescription':'Side-by-side food checkout totals, delivery windows, applied savings and expandable fees. No purchasing controls.','openai/widgetPrefersBorder':true,'openai/widgetCSP':{connect_domains:[],resource_domains:[]}}}]}));
   const foodUi={securitySchemes:[{type:'noauth'}],ui:{resourceUri:FOOD_WIDGET_URI},'openai/outputTemplate':FOOD_WIDGET_URI,'openai/toolInvocation/invoking':'Comparing checkout totals…','openai/toolInvocation/invoked':'Food comparison ready'};
-  for(const skill of skills) server.registerResource(skill.manifest.frontmatter.name,skill.manifest.uri,{mimeType:'text/markdown'},async()=>({contents:[{uri:skill.manifest.uri,mimeType:'text/markdown',text:skill.text}]}));
+  for(const skill of skills) for(const resource of skill.resources) server.registerResource(resource.uri,resource.uri,{mimeType:'text/markdown'},async()=>({contents:[{uri:resource.uri,mimeType:'text/markdown',text:resource.text}]}));
   server.server.setRequestHandler(z.object({method:z.literal('skills/list'),params:z.object({cursor:z.string().optional()}).optional()}),async request=>{
     if(request.params?.cursor) throw new Error('No further skill pages.');
     return {skills:skills.map(s=>s.manifest)};

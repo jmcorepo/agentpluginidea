@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "switchboard",
-  "version": "0.3.0",
-  "description": "Compare exact Uber Eats and DoorDash food checkouts and ride quotes using authorized provider tools or the host browser.",
+  "version": "0.4.0",
+  "description": "Compare exact Uber Eats and DoorDash checkouts using available provider tools or the host browser, including ChatGPT Work cloud browsing on mobile.",
   "repository": "https://github.com/jmcorepo/agentpluginidea",
   "author": {
     "name": "John McCarthy"
@@ -12,7 +12,7 @@
       "interface": {
         "displayName": "Switchboard",
         "shortDescription": "Compare food totals and times",
-        "longDescription": "Compare the same Uber Eats and DoorDash basket, final totals, applied discounts and delivery windows. Uses authorized provider tools or the host browser and checks quote consistency. Requires available provider access and sign-in; does not order or book. Includes an experimental Uber/Lyft ride workflow. Returns comparison cards on compatible MCP Apps hosts; local sorting and fee expansion do not recheck prices. Ordinary mobile chat availability is unverified.",
+        "longDescription": "One request compares the same Uber Eats and DoorDash basket, final totals, applied discounts and delivery windows using available authorized provider tools or the host browser. The skill package does not require desktop MCP configuration or a connected Mac. ChatGPT Work cloud-browser sign-in on mobile depends on plan and rollout; actual mobile availability and provider compatibility still require testing. Uses optional Switchboard comparison tools and cards when separately available; otherwise presents a host-observed table without server validation. Includes an experimental Uber/Lyft workflow. Does not order or book.",
         "developerName": "John McCarthy",
         "category": "Productivity",
         "defaultPrompt": "Compare Uber and Lyft for one standard ride. Ask for my pickup and destination, then check both live prices and times. Do not book."

@@ -1,10 +1,17 @@
 # Switchboard's ChatGPT direction
 
-The desired product is one ride or delivery request in ChatGPT, a brief setup
-when needed, and one comparison from all supported providers. The current
-experiment implements only USD standard Uber/Lyft quote comparison using
-host-browser observations. It does not yet implement native provider-app use,
-food MCP comparison, per-user preferences, onboarding panels, or purchasing.
+The desired product is one delivery request in the ChatGPT phone app, a brief
+setup when needed, and one comparison of Uber Eats and DoorDash without a
+connected Mac. Version 0.4.0 is a skill package without bundled desktop MCP
+configuration; it uses actually available provider tools or the host browser.
+ChatGPT Work's cloud browser is a documented mobile candidate, subject to plan
+and rollout, distinct from ordinary Chat. See [the mobile acceptance gates](CHATGPT_MOBILE.md).
+The optional comparison backend validates exact food and standard ride quotes
+and returns food cards on compatible MCP Apps hosts. Without that connection,
+the skill presents host-observed comparisons without server validation.
+Native provider-app capabilities, phone eligibility and signed-in cloud-browser
+provider compatibility still need testing. Per-user preferences, meal discovery,
+onboarding panels and purchasing remain future scope.
 
 ## Recommended architecture
 

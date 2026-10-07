@@ -1,6 +1,6 @@
 # Rides and food comparison
 
-Switchboard includes an experimental ChatGPT plugin for comparing the same Uber Eats and DoorDash basket, plus standard Uber/Lyft rides. The plugin guides authorized provider tools or the host browser to collect quotes, then the MCP validates and ranks the observations. Start with [the food comparison test guide](docs/CHATGPT_FOOD_COMPARISON.md). The MCP itself does not browse, sign in, order or book.
+Switchboard includes an experimental ChatGPT plugin for comparing the same Uber Eats and DoorDash basket, plus standard Uber/Lyft rides. The mobile candidate is a skill package without bundled desktop MCP dependencies. It guides available authorized provider tools or the host browser, including ChatGPT Work cloud browsing where supported. It uses Switchboard's comparison MCP and cards when separately available; otherwise it presents a host-observed table without server validation. Start with [the mobile acceptance gates](docs/CHATGPT_MOBILE.md) and [the food test guide](docs/CHATGPT_FOOD_COMPARISON.md). Actual phone eligibility and provider flows still require testing. The MCP itself does not browse, sign in, order or book.
 
 The original dashboard below is a separate browser-adapter prototype. Enter a route or exact food basket once; adapters prepare provider pages and accept prices only when independently observed details match. The dashboard uses plain forms and tables. No purchases are implemented.
 

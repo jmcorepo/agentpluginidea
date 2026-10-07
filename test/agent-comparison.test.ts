@@ -63,6 +63,12 @@ test('real MCP client discovers tools and completes a two-call comparison',async
     const foodResource=await client.readResource({uri:manifest.skills[1].uri});
     const foodText=(foodResource.contents[0] as {text:string}).text;
     assert.equal(manifest.skills[1].resources[0].digest,`sha256:${createHash('sha256').update(foodText).digest('hex')}`);
+    const fallback=manifest.skills[1].resources.find((resource:{uri:string})=>resource.uri.endsWith('/references/without-mcp.md'));
+    assert.ok(fallback,'food skill imports must include the optional-MCP comparison reference');
+    const fallbackResource=await client.readResource({uri:fallback.uri});
+    const fallbackText=String(fallbackResource.contents[0]?.text);
+    assert.equal(fallback.digest,`sha256:${createHash('sha256').update(fallbackText).digest('hex')}`);
+    assert.match(fallbackText,/has not passed the Switchboard server validator/);
     assert.match(foodText,/finish_food_comparison/);
     const foodManifest=await client.request({method:'skills/get',params:{uri:manifest.skills[1].uri}},z.object({skill:z.any()}));
     assert.deepEqual(foodManifest.skill,manifest.skills[1]);
