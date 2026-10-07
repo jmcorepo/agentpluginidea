@@ -9,7 +9,7 @@
     "capabilities": []
   },
   "name": "switchboard",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Compare exact Uber Eats and DoorDash checkouts using available provider tools or the host browser, including ChatGPT Work cloud browsing on mobile.",
   "author": {
     "name": "John McCarthy"

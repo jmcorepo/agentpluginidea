@@ -10,7 +10,9 @@ OpenAI now documents ChatGPT Work's cloud browser on mobile, including authentic
 
 ## Implemented package change
 
-Version 0.4.0 keeps the existing private plugin identity and both skills, removes its bundled MCP declarations, and makes the comparison tools optional. No registered App ID is invented. The host checks provider/browser capabilities before collecting request details, uses both providers from one request, and can produce an evidence-based comparison table without MCP. That fallback has no server validation or custom comparison card. Missing providers and missing host capabilities remain explicit blockers.
+Version 0.4.1 keeps the existing private plugin identity and both skills, removes its bundled MCP declarations, and makes the comparison tools optional. No registered App ID is invented. The host checks provider/browser capabilities before collecting request details, uses both providers from one request, and can produce an evidence-based comparison table without MCP. That fallback has no server validation or custom comparison card. Missing providers and missing host capabilities remain explicit blockers.
+
+The food skill now includes a [guided sign-in playbook and evaluation cases](SIGN_IN_TESTS.md); actual secure host sign-in still needs replay.
 
 The Render comparison MCP and card source remain available for compatible hosts and future registered App integration. Removing the desktop package declaration does not shut down or change the existing runtime. A registered app can be referenced using `.app.json` only after obtaining the real App ID and verifying its availability on the intended phone surface. Connecting a developer-mode app or publishing a listing alone does not prove ordinary Chat support. Public submission, identity verification and review remain separate steps.
 

@@ -29,6 +29,8 @@ If the user asks for an unspecified meal within a budget or deadline, resolve a 
 
 ## Sign in and gather both checkouts
 
+Before any sign-in attempt, read [the provider sign-in playbook](references/sign-in.md). Reuse an authenticated session first. Use the host's secure form or supported manual takeover, let the user choose their existing login method, verify the provider's actual post-login state, and distinguish cancellation, secure submission failure and page/network errors. Keep one recovery budget per provider, stop automatic retries after a user dismissal, and continue the other provider when one is blocked. Never treat `submitted` or account recognition as successful sign-in.
+
 Reuse the host's existing authorized sessions. If login or verification is necessary, open the official provider page through the available host browser and let the user complete it. Never ask for passwords or verification codes in chat, take credentials through Switchboard, or claim that one login is permanent. Do not bypass provider challenges. Ask only when sign-in, a cart conflict or a missing selection requires user action; routine navigation and reading quotes need no extra conversational confirmation.
 
 Preserve unrelated existing carts. Do not clear or replace them without the user's specific agreement. Preparing this requested comparison can involve adding the requested items or changing the common tip in its own basket. Stop at the final review screen: never place an order, pay, change payment details or activate a subscription. Follow the host's required approvals.

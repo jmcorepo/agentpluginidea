@@ -69,6 +69,12 @@ test('real MCP client discovers tools and completes a two-call comparison',async
     const fallbackText=String(fallbackResource.contents[0]?.text);
     assert.equal(fallback.digest,`sha256:${createHash('sha256').update(fallbackText).digest('hex')}`);
     assert.match(fallbackText,/has not passed the Switchboard server validator/);
+    const signIn=manifest.skills[1].resources.find((resource:{uri:string})=>resource.uri.endsWith('/references/sign-in.md'));
+    assert.ok(signIn,'food skill imports must include the sign-in guide');
+    const signInResource=await client.readResource({uri:signIn.uri});
+    const signInText=String(signInResource.contents[0]?.text);
+    assert.equal(signIn.digest,`sha256:${createHash('sha256').update(signInText).digest('hex')}`);
+    assert.match(signInText,/Provider sign-in playbook/);
     assert.match(foodText,/finish_food_comparison/);
     const foodManifest=await client.request({method:'skills/get',params:{uri:manifest.skills[1].uri}},z.object({skill:z.any()}));
     assert.deepEqual(foodManifest.skill,manifest.skills[1]);

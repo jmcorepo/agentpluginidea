@@ -15,7 +15,7 @@ export function createSwitchboardMcp(comparisons=new AgentComparisons(),foods=ne
     const description=text.match(/^description: (.+)$/m)?.[1];
     if(!description) throw new Error(`Missing skill description: ${name}`);
     const resources=[{uri,text}];
-    if(name==='compare-food') resources.push({uri:'skill://switchboard/compare-food/references/without-mcp.md',text:readFileSync(new URL('../plugin/skills/compare-food/references/without-mcp.md',import.meta.url),'utf8')});
+    if(name==='compare-food') for(const reference of ['without-mcp','sign-in']) resources.push({uri:`skill://switchboard/compare-food/references/${reference}.md`,text:readFileSync(new URL(`../plugin/skills/compare-food/references/${reference}.md`,import.meta.url),'utf8')});
     return {text,resources,manifest:{uri,frontmatter:{name,description},resources:resources.map(resource=>({uri:resource.uri,digest:`sha256:${createHash('sha256').update(resource.text).digest('hex')}`}))}};
   });
   const server=new McpServer({name:'switchboard',version:'0.3.0'},{capabilities:{extensions:{'io.modelcontextprotocol/skills':{}}},instructions:'For food comparisons, use compare-food: collect both Uber Eats and DoorDash checkouts with authorized provider tools or your host browser, then call compare_food_quotes ONCE with the exact request and both observations. It validates and returns the comparison card. The older prepare/finish flow remains supported. For rides use compare-rides and the ride tools. If provider access is unavailable, report the blocker. This MCP validates agent-reported quotes; it does not browse, connect provider accounts, order food or book rides.'});

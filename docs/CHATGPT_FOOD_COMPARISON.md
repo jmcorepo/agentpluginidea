@@ -1,6 +1,6 @@
 # Test food comparisons in ChatGPT
 
-The private Switchboard plugin version 0.4.0 provides `compare-food` and the experimental ride skill without a bundled desktop MCP dependency. It uses available provider tools or the host browser, including ChatGPT Work's cloud browser on mobile when supported. The existing Render MCP still provides the preferred one-call `compare_food_quotes` and compatible `prepare_food_comparison` / `finish_food_comparison` tools to hosts where it is separately connected. These tools and their card are optional; without them, the skill checks observations and presents a table without server validation. See [the mobile architecture and acceptance gates](CHATGPT_MOBILE.md).
+The private Switchboard plugin version 0.4.1 provides `compare-food` and the experimental ride skill without a bundled desktop MCP dependency. It uses available provider tools or the host browser, including ChatGPT Work's cloud browser on mobile when supported. The existing Render MCP still provides the preferred one-call `compare_food_quotes` and compatible `prepare_food_comparison` / `finish_food_comparison` tools to hosts where it is separately connected. These tools and their card are optional; without them, the skill checks observations and presents a table without server validation. See [the mobile architecture and acceptance gates](CHATGPT_MOBILE.md).
 
 Open the existing Switchboard plugin, refresh/update it if the client shows an older release, and start a new conversation on a surface with authorized provider tools or an interactive browser. Use one request:
 
@@ -15,6 +15,10 @@ Totals include the same tip. Missing fee details remain unknown. Currency requir
 DoorDash's final `Place Order` button amount is accepted as total evidence on its checkout page. Read it without clicking. Before-tip figures and conflicting final totals remain invalid. Fresh matching observations may be collected before the comparison plan; the 15-minute quote-age and plan-expiry checks apply separately. Preserve actual capture times rather than changing them to avoid rejection. After one targeted correction for the same error, the host reports the blocker instead of repeating failed calls.
 
 Automated checks cover basket equivalence, branches, addresses, tips, currency, total arithmetic, capture time, blocked providers, price ties and delivery window overlap. SDK tests cover tool/skill discovery and prepare/finish calls across separate HTTP requests. These checks and synthetic deployed smoke tests do not prove signed-in provider compatibility. A successful live two-checkout comparison is the remaining acceptance gate. Nothing is ordered by these tools.
+
+## Guided sign-in
+
+Before authentication, the food skill loads `references/sign-in.md`. It covers observed form/popup stages, secure field mapping, cancellation, connection errors, modal recovery, a per-provider retry limit, actual signed-in-state verification and independent provider attempts. A submitted secure form is not proof of login. The agent uses supported manual takeover when the secure bridge cannot handle a form. See [sign-in evaluation evidence and pending host cases](SIGN_IN_TESTS.md).
 
 ## Comparison UI and mobile status
 
