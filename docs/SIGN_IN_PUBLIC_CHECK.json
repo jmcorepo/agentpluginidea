@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-10-07T16:10:54.412Z",
+  "results": [
+    {
+      "provider": "ubereats",
+      "httpStatus": 403,
+      "title": "Just a moment...",
+      "host": "www.ubereats.com",
+      "path": "/",
+      "clickedSignIn": false,
+      "recognizedError": null,
+      "visibleControls": [],
+      "initialSignInEntry": false,
+      "scope": "Fresh logged-out local Chromium; no credentials entered. Not a ChatGPT cloud-browser sign-in test."
+    },
+    {
+      "provider": "doordash",
+      "httpStatus": 403,
+      "title": "Just a moment...",
+      "host": "www.doordash.com",
+      "path": "/",
+      "clickedSignIn": false,
+      "recognizedError": null,
+      "visibleControls": [],
+      "initialSignInEntry": false,
+      "scope": "Fresh logged-out local Chromium; no credentials entered. Not a ChatGPT cloud-browser sign-in test."
+    }
+  ]
+}

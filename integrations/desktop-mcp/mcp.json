@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "switchboard": {
+      "type": "streamable-http",
+      "url": "https://agent-commerce-browser.onrender.com/mcp"
+    }
+  }
+}

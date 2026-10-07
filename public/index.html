@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rides and food comparison</title><link rel="stylesheet" href="/style.css"><link rel="icon" href="/favicon.svg" type="image/svg+xml"></head>
+<body>
+<h1>Rides and food comparison</h1>
+<p>Connect your accounts once. Enter a request and compare the actual provider quotes.</p>
+<p id="runtime-status" role="status">Checking local runtime…</p>
+<nav aria-label="Sections"><button data-view="rides">Rides</button> <button data-view="eats">Food</button> <button data-view="connections">Accounts</button> <button data-view="history">History</button></nav>
+<p id="notice" role="status" hidden></p>
+<section id="view-rides" class="view">
+<h2>Compare rides</h2>
+<form id="rides-form">
+<label>Pickup address <input name="pickup" data-address-search required maxlength="300" placeholder="Full street address, city, state, ZIP"></label>
+<label>Destination address <input name="destination" data-address-search required maxlength="300" placeholder="Full street address, city, state, ZIP"></label>
+<label>Passengers <input name="passengers" type="number" min="1" max="4" value="1" required></label>
+<p>Standard, private rides: UberX and Lyft Standard. Pickup wait and destination arrival are different estimates.</p>
+<button type="submit">Compare Uber and Lyft</button>
+</form>
+<div id="rides-results"><p>No comparison yet.</p></div>
+</section>
+<section id="view-eats" class="view" hidden>
+<h2>Compare exact food baskets</h2>
+<form id="eats-form">
+<label>Delivery address <input name="address" data-address-search required maxlength="300" placeholder="Street address, unit, city, state, ZIP"></label>
+<label>Restaurant name <input name="restaurant" required maxlength="200"></label>
+<label>Restaurant branch address <input name="restaurantAddress" data-address-search required maxlength="300" placeholder="Exact physical branch address"></label>
+<p>Standard delivery. No substitutions.</p>
+<div id="basket-items"></div><button id="add-item" type="button">Add another item</button>
+<label>Tip in USD <input name="tip" required inputmode="decimal" value="0.00" pattern="[0-9]+(\.[0-9]{1,2})?"></label>
+<button type="submit">Compare DoorDash and Uber Eats</button>
+</form>
+<div id="eats-results"><p>No comparison yet.</p></div>
+</section>
+<section id="view-connections" class="view" hidden>
+<h2>Account connections</h2>
+<p>Sign in directly in the provider browser. Account login is the setup step; comparisons prepare the requested trip or basket automatically.</p>
+<div id="connection-list"></div>
+<p id="browser-status"></p>
+<p>No API keys are required for the local browser adapter. Browser sessions and history stay with the comparison service; the local app stores them on your computer. Opening a browser alone does not verify sign-in.</p>
+<button id="refresh-status" type="button">Refresh account status</button>
+</section>
+<section id="view-history" class="view" hidden><h2>History</h2><button id="refresh-history">Refresh</button><div id="history-list"></div></section>
+<p>USD / United States. This version compares; it does not book rides or place orders. Unsupported pages and unverified context return an error instead of a guessed price.</p>
+<dialog id="browser-dialog"><h2 id="browser-title">Provider browser</h2><button id="close-browser" type="button">Close view</button><p>Use this view only to sign in or resolve an account exception. When running the app locally on desktop, you can use the native provider window.</p><div class="browser-toolbar"><input id="browser-url" aria-label="Provider URL" placeholder="https://"><button id="browser-navigate">Go</button><button id="browser-refresh">Refresh image</button></div><p id="browser-message" role="status"></p><div id="screenshot-wrap"><img id="browser-image" alt="Provider browser: click to interact" draggable="false"></div><div class="browser-controls"><input id="browser-text" type="password" aria-label="Text to type in selected provider field" placeholder="Select a field above, enter text here"><button id="browser-type">Type</button><button data-key="Tab">Tab</button><button data-key="Enter">Enter</button><button data-key="Backspace">Backspace</button><button data-scroll="-500">Scroll up</button><button data-scroll="500">Scroll down</button></div><p id="browser-loading" hidden>Updating browser…</p></dialog>
+<dialog id="login-dialog"><h2>Unlock local workspace</h2><form id="login-form"><label>Password <input name="password" type="password" required autocomplete="current-password"></label><p id="login-error" role="alert"></p><button type="submit">Unlock</button></form></dialog>
+<script type="module" src="/app.js"></script>
+</body></html>

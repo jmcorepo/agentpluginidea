@@ -1,0 +1,15 @@
+services:
+  comparison:
+    build: .
+    init: true
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      MVP_PASSWORD: ${MVP_PASSWORD:?Set MVP_PASSWORD to a private password of at least 12 characters}
+      APP_ORIGIN: ${APP_ORIGIN:-http://127.0.0.1:3000}
+    volumes:
+      - comparison-data:/data
+    shm_size: 1gb
+    restart: unless-stopped
+volumes:
+  comparison-data:
