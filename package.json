@@ -15,7 +15,8 @@
     "test": "node --import tsx test/all.ts",
     "check": "tsc --noEmit",
     "verify": "node --import tsx test/browser.e2e.ts",
-    "verify:addresses": "node --import tsx test/address.e2e.ts"
+    "verify:addresses": "node --import tsx test/address.e2e.ts",
+    "verify:food-ui": "node --import tsx test/food-widget.e2e.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",

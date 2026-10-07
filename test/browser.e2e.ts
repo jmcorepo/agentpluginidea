@@ -389,6 +389,12 @@ try {
   );
   await app!.browser.disconnect("uber");
   assert.equal(await vault.read("session-uber"), null);
+  await page.goto(`http://127.0.0.1:${port}/comparison-preview?preview=1`);
+  await page.getByText('Design preview · sample prices, not live quotes').waitFor();
+  await page.getByRole('button',{name:'Applied savings',exact:true}).click();
+  assert.equal(await page.locator('.card h2').first().innerText(),'DoorDash');
+  assert.match(await page.locator('#headline').innerText(),/saves \$1.29/);
+  assert.deepEqual(errors,[],'Comparison preview must work with its script/style CSP hashes.');
   console.log(
     "PASS: single-submit rides and exact food preparation, independent validation, HTTP jobs, partial login failure, no purchase, encrypted history/restart, isolated session recovery, API guards, plain mobile UI and zero page errors. Synthetic provider fixtures only.",
   );

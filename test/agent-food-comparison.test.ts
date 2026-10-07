@@ -1,17 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {AgentFoodComparisons} from '../src/agent-food-comparison.js';
+import {FOOD_WIDGET_URI} from '../src/food-widget.js';
 import {AgentComparisons} from '../src/agent-comparison.js';
 import {createSwitchboardMcp} from '../src/mcp.js';
 import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {InMemoryTransport} from '@modelcontextprotocol/sdk/inMemory.js';
 
-export const foodInput={address:'1 Main St, Boston, MA 02110',restaurant:'Test Kitchen',restaurantAddress:'2 Elm St, Boston, MA 02111',items:[{name:'Rice bowl',quantity:1,notes:'Sauce on the side',modifiers:[{group:'Protein',option:'Chicken'}]}],tipCents:300,priority:'cheapest'};
-const now=Date.parse('2026-10-06T12:00:00Z');
-export function foodObservation(provider:'ubereats'|'doordash',overrides={}) {
-  const ue=provider==='ubereats';
-  return {provider,status:'observed',source:'provider_page',sourceUrl:ue?'https://www.ubereats.com/store/test-kitchen':'https://www.doordash.com/store/test-kitchen',capturedAt:new Date(now).toISOString(),address:foodInput.address,restaurant:foodInput.restaurant,restaurantAddress:foodInput.restaurantAddress,items:foodInput.items,tipCents:300,deliverySpeed:'standard',currencyContext:{kind:'explicit_currency',evidence:'Checkout currency: USD'},totalCents:ue?2300:2600,totalIncludesTip:true,totalEvidence:ue?'Total including tip $23.00 USD':'Total including tip $26.00 USD',breakdown:{subtotalCents:1500,taxCents:100,deliveryFeeCents:ue?200:500,serviceFeeCents:200,otherFeesCents:0,discountCents:0},etaMinutesMin:ue?35:20,etaMinutesMax:ue?45:30,etaEvidence:ue?'35–45 minutes':'20–30 minutes',benefits:[],evidence:'Synthetic test fixture: branch, items, delivery, tip, fees and total displayed.',...overrides};
-}
+import {foodInput,foodObservation,foodNow as now} from './fixtures/agent-food.js';
 function compare(changes={},other={},request={}) {
   const c=new AgentFoodComparisons(()=>now),p=c.prepare({...foodInput,...request});
   return c.finish({comparisonId:p.comparisonId,observations:[foodObservation('ubereats',changes),foodObservation('doordash',other)]});
@@ -116,5 +112,21 @@ test('MCP client can prepare and finish two observed food checkouts through the 
     const p=await client.callTool({name:'prepare_food_comparison',arguments:foodInput});assert.ok(!p.isError);
     const r=await client.callTool({name:'finish_food_comparison',arguments:{comparisonId:p.structuredContent!.comparisonId,observations:[foodObservation('ubereats'),foodObservation('doordash')]}});
     assert.ok(!r.isError);assert.equal(r.structuredContent!.status,'comparable');assert.deepEqual(r.structuredContent!.ranking,{cheapest:'ubereats',fastest:'doordash'});
+  } finally {await client.close();await server.close();}
+});
+test('one-call food comparison preserves validation, exclusions and UI resource discovery',async()=>{
+  const server=createSwitchboardMcp(new AgentComparisons(()=>now),new AgentFoodComparisons(()=>now));
+  const client=new Client({name:'food-card-test',version:'1'}),[ct,st]=InMemoryTransport.createLinkedPair();
+  try {
+    await Promise.all([server.connect(st),client.connect(ct)]);
+    const tools=await client.listTools();
+    const direct=tools.tools.find(t=>t.name==='compare_food_quotes');assert.equal((direct?._meta?.ui as {resourceUri:string}).resourceUri,FOOD_WIDGET_URI);
+    assert.equal(tools.tools.find(t=>t.name==='prepare_food_comparison')?._meta?.ui,undefined);
+    const resource=await client.readResource({uri:FOOD_WIDGET_URI});assert.equal(resource.contents[0]?.mimeType,'text/html;profile=mcp-app');
+    assert.match(String(resource.contents[0]?.text),/ui\/initialize/);
+    const input={request:foodInput,observations:[foodObservation('ubereats'),foodObservation('doordash')]};
+    const valid=await client.callTool({name:'compare_food_quotes',arguments:input});assert.ok(!valid.isError);assert.equal(valid.structuredContent!.status,'comparable');assert.deepEqual(valid.structuredContent!.ranking,{cheapest:'ubereats',fastest:'doordash'});
+    const invalid=await client.callTool({name:'compare_food_quotes',arguments:{...input,observations:[foodObservation('ubereats',{tipCents:0}),foodObservation('doordash')]}});
+    assert.equal(invalid.structuredContent!.status,'incomplete');assert.equal((invalid.structuredContent!.ranking as {cheapest:null}).cheapest,null);
   } finally {await client.close();await server.close();}
 });

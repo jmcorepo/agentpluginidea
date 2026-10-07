@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Switchboard comparison</title>
+<style>
+:root{color-scheme:light dark;--bg:#fff;--ink:#18251e;--muted:#57665e;--line:#e0e8e2;--soft:#f5f8f5;--accent:#176c43;--tint:#e7f3e9;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}main{max-width:850px;margin:auto;padding:22px}h1,h2,p{margin:0}h1{font-size:22px;letter-spacing:-.6px}h2{font-size:17px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.brand{display:flex;align-items:center;gap:9px;font-weight:750;letter-spacing:-.3px}.mark{background:var(--accent);color:white;width:29px;height:29px;border-radius:9px;display:grid;place-items:center}.stamp{font-size:12px;color:var(--muted)}.intro{margin-bottom:16px}.sub{color:var(--muted);margin-top:4px;overflow-wrap:anywhere}.summary{border:1px solid var(--line);border-radius:14px;background:var(--soft);padding:15px 17px;margin-bottom:16px}.summary strong{display:block;font-size:17px;margin-bottom:3px}.summary p{color:var(--muted)}.controls{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--muted);padding:8px 14px;border-radius:999px;cursor:pointer}button[aria-pressed=true]{color:var(--accent);background:var(--tint);border-color:var(--accent);font-weight:650}button:focus-visible,summary:focus-visible{outline:3px solid #629cff;outline-offset:3px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{border:1px solid var(--line);border-radius:17px;padding:19px;min-width:0}.card.best{border-color:var(--accent)}.provider{display:flex;align-items:center;justify-content:space-between;gap:7px}.badge{font-size:11px;font-weight:700;padding:3px 8px;background:var(--tint);color:var(--accent);border-radius:999px}.price{font-size:38px;font-weight:750;letter-spacing:-1.5px;margin-top:16px;line-height:1.2}.label{font-size:12px;color:var(--muted)}.delivery{display:flex;justify-content:space-between;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.delivery strong{font-size:16px}.savings{color:var(--accent);padding:12px 0 0;font-weight:650}.benefits{margin:5px 0 0;padding-left:18px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}details{margin-top:15px;border-top:1px solid var(--line);padding-top:12px}summary{cursor:pointer;color:var(--muted);font-size:13px}dl{margin:12px 0 0}dl div{display:flex;justify-content:space-between;gap:12px;margin:6px 0}dt{color:var(--muted)}dd{margin:0;font-variant-numeric:tabular-nums}.capture{font-size:11px;color:var(--muted);margin-top:14px}.blocked{background:var(--soft)}.blocked p{color:var(--muted);margin-top:12px;overflow-wrap:anywhere}.foot{font-size:11px;color:var(--muted);margin-top:16px}.empty{padding:30px 0;color:var(--muted)}.sample{color:#805813;font-size:12px;margin-bottom:10px}.stale{color:#875500;font-size:12px;margin-top:9px}[hidden]{display:none!important}
+@media(max-width:520px){main{padding:16px}.grid{grid-template-columns:1fr}.price{font-size:34px}header{align-items:flex-start}.stamp{max-width:125px;text-align:right}h1{font-size:20px}}
+@media(prefers-color-scheme:dark){:root{--bg:#19201b;--ink:#edf5ef;--muted:#a9b7ad;--line:#354139;--soft:#212b24;--accent:#9ad7af;--tint:#2b4432}.mark{background:#3b8255}.stale{color:#f0c675}.sample{color:#f0c675}}
+html[data-theme=dark]{--bg:#19201b;--ink:#edf5ef;--muted:#a9b7ad;--line:#354139;--soft:#212b24;--accent:#9ad7af;--tint:#2b4432}html[data-theme=light]{--bg:#fff;--ink:#18251e;--muted:#57665e;--line:#e0e8e2;--soft:#f5f8f5;--accent:#176c43;--tint:#e7f3e9}
+</style></head><body><main>
+<header><div class="brand"><span class="mark" aria-hidden="true">⇄</span> Switchboard</div><span class="stamp" id="stamp">Food comparison</span></header>
+<p class="sample" id="sample" hidden>Design preview · sample prices, not live quotes</p>
+<section class="intro"><h1 id="restaurant">Your meal, compared.</h1><p class="sub" id="basket">Final totals. Same basket. Same tip.</p></section>
+<div class="empty" id="empty" role="status">Waiting for both provider checkout results…</div>
+<section id="result" hidden aria-live="polite"><div class="summary"><strong id="headline"></strong><p id="tradeoff"></p><p class="stale" id="stale" hidden>These quotes are over 15 minutes old. Ask ChatGPT to check fresh totals before deciding.</p></div>
+<div class="controls" role="group" aria-label="Sort comparison"><button type="button" data-sort="cheapest" aria-pressed="true">Cheapest</button><button type="button" data-sort="quickest" aria-pressed="false">Delivery time</button><button type="button" data-sort="savings" aria-pressed="false">Applied savings</button></div>
+<div class="grid" id="cards"></div><p class="foot">Totals include your tip and applied discounts. Estimates can change. Observed quotes are checked for consistency; sources are not independently verified. Nothing has been ordered.</p></section>
+</main><script>
+(() => {
+  'use strict';
+  const names={ubereats:'Uber Eats',doordash:'DoorDash'}, money=n=>n===null||n===undefined?'Unknown':new Intl.NumberFormat(document.documentElement.lang||'en-US',{style:'currency',currency:'USD'}).format(n===0?0:n/100);
+  const el=id=>document.getElementById(id);let data=null,sort='cheapest',initialized=false,nextId=1;const requests=new Map();
+  function node(tag,text,className){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n;}
+  function post(message){if(window.parent!==window)window.parent.postMessage({jsonrpc:'2.0',...message},'*');}
+  function time(value){const d=new Date(value);return Number.isFinite(d.getTime())?new Intl.DateTimeFormat(document.documentElement.lang||'en-US',{hour:'numeric',minute:'2-digit'}).format(d):'Unknown';}
+  function isStale(){return data&&data.quotes.some(q=>Date.now()-Date.parse(q.capturedAt)>=900000);}
+  function render(value){
+    if(!value||!value.request||!Array.isArray(value.quotes)||!Array.isArray(value.excluded)||!value.ranking)return;
+    data=value;el('empty').hidden=true;el('result').hidden=false;el('restaurant').textContent=value.request.restaurant;
+    el('basket').textContent=value.request.items.map(i=>i.quantity+' × '+i.name).join(' · ')+' · Standard delivery · '+money(value.request.tipCents)+' tip';
+    el('stamp').textContent='Checked '+time(value.checkedAt||value.quotes[0]?.capturedAt);
+    const complete=value.status==='comparable'&&value.quotes.length===2;
+    el('headline').textContent=!complete?'Comparison incomplete':value.ranking.cheapest?names[value.ranking.cheapest]+' saves '+money(value.priceDifferenceCents):'Same total on both platforms';
+    el('tradeoff').textContent=!complete?'One or more checkouts could not be verified. There is no cross-provider winner.':value.ranking.fastest?names[value.ranking.fastest]+' has the earlier delivery window.':value.deliveryEstimatesOverlap?'Delivery windows overlap — no clear fastest option.':'A delivery estimate is missing — no clear fastest option.';
+    draw();
+  }
+  function draw(){
+    if(!data)return;el('stale').hidden=!isStale();el('cards').replaceChildren();
+    document.querySelectorAll('[data-sort]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sort===sort)));
+    const quotes=[...data.quotes].sort((a,b)=>sort==='savings'?(b.breakdown.discountCents??-1)-(a.breakdown.discountCents??-1):sort==='quickest'?(a.etaMinutesMax??Infinity)-(b.etaMinutesMax??Infinity):a.totalCents-b.totalCents);
+    for(const q of quotes){
+      const best=!isStale()&&data.status==='comparable'&&(sort==='quickest'?data.ranking.fastest===q.provider:sort==='cheapest'&&data.ranking.cheapest===q.provider);
+      const card=node('article',undefined,'card'+(best?' best':'')),head=node('div',undefined,'provider');head.append(node('h2',names[q.provider]||q.provider));
+      if(best)head.append(node('span',sort==='quickest'?'Earlier window':'Cheapest','badge'));card.append(head,node('p',money(q.totalCents),'price'),node('p','Final total · tip included','label'));
+      const delivery=node('div',undefined,'delivery');delivery.append(node('span','Delivery estimate','label'),node('strong',q.etaMinutesMin===null?'Unknown':q.etaMinutesMin+'–'+q.etaMinutesMax+' min'));card.append(delivery);
+      card.append(node('p',q.breakdown.discountCents===null?'Applied discount unknown':q.breakdown.discountCents>0?money(q.breakdown.discountCents)+' discount already applied':'No applied discount shown','savings'));
+      if(q.benefits?.length){const ul=node('ul',undefined,'benefits');q.benefits.forEach(b=>ul.append(node('li',b)));card.append(ul);}
+      const details=node('details'),summary=node('summary','See fees and savings'),dl=node('dl');
+      const rows=[['Items',q.breakdown.subtotalCents],['Delivery fee',q.breakdown.deliveryFeeCents],['Service fee',q.breakdown.serviceFeeCents],['Other fees',q.breakdown.otherFeesCents],['Tax',q.breakdown.taxCents],['Tip',q.tipCents],['Applied discount',q.breakdown.discountCents===null?null:-q.breakdown.discountCents]];
+      for(const [label,amount] of rows){const row=node('div');row.append(node('dt',label),node('dd',money(amount)));dl.append(row);}details.append(summary,dl);card.append(details,node('p','Observed '+time(q.capturedAt),'capture'));el('cards').append(card);
+    }
+    for(const q of data.excluded){const card=node('article',undefined,'card blocked');card.append(node('h2',names[q.provider]||q.provider),node('p','Unavailable','price'),node('p',q.reason));el('cards').append(card);}
+    resize();
+  }
+  function resize(){if(initialized)post({method:'ui/notifications/size-changed',params:{height:document.documentElement.scrollHeight,width:document.documentElement.clientWidth}});}
+  document.querySelectorAll('[data-sort]').forEach(b=>b.addEventListener('click',()=>{sort=b.dataset.sort;draw();}));
+  function context(c){if(c?.theme==='dark'||c?.theme==='light')document.documentElement.dataset.theme=c.theme;if(c?.locale)document.documentElement.lang=c.locale;}
+  window.addEventListener('message',event=>{
+    if(event.source!==window.parent)return;const m=event.data;if(!m||m.jsonrpc!=='2.0')return;
+    if(requests.has(m.id)){const done=requests.get(m.id);requests.delete(m.id);done(m);return;}
+    if(m.method==='ui/notifications/tool-result'){if(m.params?.isError){el('empty').textContent='The comparison could not be validated. Check the tool response in chat.';el('empty').hidden=false;el('result').hidden=true;data=null;}else render(m.params?.structuredContent);}
+    if(m.method==='ui/notifications/tool-cancelled'){el('empty').textContent='Comparison stopped. Ask ChatGPT to try again.';el('empty').hidden=false;el('result').hidden=true;data=null;}
+    if(m.method==='ui/notifications/host-context-changed'){context(m.params);resize();}
+    if(m.method==='ui/resource-teardown'){clearInterval(ageTimer);post({id:m.id,result:{}});}
+    if(m.method==='ping')post({id:m.id,result:{}});
+  });
+  // MCP Apps bridge, with feature-detected compatibility for older ChatGPT hosts.
+  if(window.parent!==window){const id=nextId++;requests.set(id,m=>{if(m.error)return;context(m.result?.hostContext);initialized=true;post({method:'ui/notifications/initialized',params:{}});resize();});post({id,method:'ui/initialize',params:{protocolVersion:'2026-01-26',appInfo:{name:'Switchboard food comparison',version:'0.3.0'},appCapabilities:{availableDisplayModes:['inline']}}});}
+  if(window.openai?.toolOutput)render(window.openai.toolOutput);
+  window.addEventListener('openai:set_globals',e=>{if(e.detail?.globals?.toolOutput)render(e.detail.globals.toolOutput);});
+  const ageTimer=setInterval(()=>{if(data){el('stale').hidden=!isStale();if(isStale())draw();}},30000);
+  new ResizeObserver(resize).observe(document.body);
+  if(window.parent===window&&new URLSearchParams(location.search).get('preview')==='1'){
+    el('sample').hidden=false;const capturedAt=new Date().toISOString();
+    render({status:'comparable',checkedAt:capturedAt,request:{restaurant:'Burger comparison',items:[{quantity:1,name:'Burger'},{quantity:1,name:'Fries'}],tipCents:105},ranking:{cheapest:'doordash',fastest:null},priceDifferenceCents:129,deliveryEstimatesOverlap:true,excluded:[],quotes:[
+      {provider:'ubereats',capturedAt,totalCents:1704,tipCents:105,etaMinutesMin:12,etaMinutesMax:32,benefits:[],breakdown:{subtotalCents:1048,taxCents:73,deliveryFeeCents:199,serviceFeeCents:null,otherFeesCents:279,discountCents:0}},
+      {provider:'doordash',capturedAt,totalCents:1575,tipCents:105,etaMinutesMin:14,etaMinutesMax:24,benefits:['Sample delivery discount'],breakdown:{subtotalCents:1048,taxCents:73,deliveryFeeCents:299,serviceFeeCents:300,otherFeesCents:0,discountCents:250}}]});
+  }
+})();
+</script></body></html>

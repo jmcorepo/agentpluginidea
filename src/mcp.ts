@@ -5,7 +5,8 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import {AgentComparisons,planSchema,finishSchema} from './agent-comparison.js';
-import {AgentFoodComparisons,foodPlanSchema,foodFinishSchema} from './agent-food-comparison.js';
+import {AgentFoodComparisons,foodPlanSchema,foodFinishSchema,foodCompareSchema} from './agent-food-comparison.js';
+import {foodWidgetHtml,FOOD_WIDGET_URI} from './food-widget.js';
 
 export function createSwitchboardMcp(comparisons=new AgentComparisons(),foods=new AgentFoodComparisons()) {
   const skills=['compare-rides','compare-food'].map(name=>{
@@ -15,7 +16,9 @@ export function createSwitchboardMcp(comparisons=new AgentComparisons(),foods=ne
     if(!description) throw new Error(`Missing skill description: ${name}`);
     return {text,manifest:{uri,frontmatter:{name,description},resources:[{uri,digest:`sha256:${createHash('sha256').update(text).digest('hex')}`}]}};
   });
-  const server=new McpServer({name:'switchboard',version:'0.2.1'},{capabilities:{extensions:{'io.modelcontextprotocol/skills':{}}},instructions:'For food comparisons, use compare-food: prepare_food_comparison, collect both Uber Eats and DoorDash checkouts with authorized provider tools or your host browser, then finish_food_comparison. For rides use compare-rides and the ride tools. If provider access is unavailable, report the blocker. This MCP validates agent-reported quotes; it does not browse, connect provider accounts, order food or book rides.'});
+  const server=new McpServer({name:'switchboard',version:'0.3.0'},{capabilities:{extensions:{'io.modelcontextprotocol/skills':{}}},instructions:'For food comparisons, use compare-food: collect both Uber Eats and DoorDash checkouts with authorized provider tools or your host browser, then call compare_food_quotes ONCE with the exact request and both observations. It validates and returns the comparison card. The older prepare/finish flow remains supported. For rides use compare-rides and the ride tools. If provider access is unavailable, report the blocker. This MCP validates agent-reported quotes; it does not browse, connect provider accounts, order food or book rides.'});
+  server.registerResource('food-comparison-card',FOOD_WIDGET_URI,{mimeType:'text/html;profile=mcp-app'},async()=>({contents:[{uri:FOOD_WIDGET_URI,mimeType:'text/html;profile=mcp-app',text:foodWidgetHtml,_meta:{ui:{prefersBorder:true,csp:{connectDomains:[],resourceDomains:[]}},'openai/widgetDescription':'Side-by-side food checkout totals, delivery windows, applied savings and expandable fees. No purchasing controls.','openai/widgetPrefersBorder':true,'openai/widgetCSP':{connect_domains:[],resource_domains:[]}}}]}));
+  const foodUi={securitySchemes:[{type:'noauth'}],ui:{resourceUri:FOOD_WIDGET_URI},'openai/outputTemplate':FOOD_WIDGET_URI,'openai/toolInvocation/invoking':'Comparing checkout totals…','openai/toolInvocation/invoked':'Food comparison ready'};
   for(const skill of skills) server.registerResource(skill.manifest.frontmatter.name,skill.manifest.uri,{mimeType:'text/markdown'},async()=>({contents:[{uri:skill.manifest.uri,mimeType:'text/markdown',text:skill.text}]}));
   server.server.setRequestHandler(z.object({method:z.literal('skills/list'),params:z.object({cursor:z.string().optional()}).optional()}),async request=>{
     if(request.params?.cursor) throw new Error('No further skill pages.');
@@ -41,8 +44,12 @@ export function createSwitchboardMcp(comparisons=new AgentComparisons(),foods=ne
   },async input=>result(foods.prepare(input)));
   server.registerTool('finish_food_comparison',{
     title:'Validate and compare food checkout quotes',description:'Check agent-reported Uber Eats and DoorDash checkout observations for identical branch, basket, address, standard delivery, tip, currency and freshness. Compare final totals, discounts and delivery windows; report missing providers without declaring a winner.',
-    inputSchema:foodFinishSchema.shape,annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false},_meta:{securitySchemes:[{type:'noauth'}]},
+    inputSchema:foodFinishSchema.shape,annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false},_meta:foodUi,
   },async input=>result(foods.finish(input)));
+  server.registerTool('compare_food_quotes',{
+    title:'Compare food totals and show the comparison card',description:'Preferred one-call food comparison: AFTER collecting both exact Uber Eats and DoorDash checkouts, supply the request and both observations. Validates the same branch, basket, address, tip, USD currency, final totals and freshness; returns cheapest, supported fastest, applied savings and the UI card. No preparation call needed. Does not fetch provider data, sign in, discover meals or order.',
+    inputSchema:foodCompareSchema.shape,annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false},_meta:foodUi,
+  },async input=>result(foods.compare(input)));
   return server;
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href) {

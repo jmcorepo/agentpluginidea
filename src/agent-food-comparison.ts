@@ -37,6 +37,7 @@ const observed=z.object({
 }).strict();
 const unavailable=z.object({provider,status:z.literal('unavailable'),reason:z.string().trim().min(1).max(1000)}).strict();
 export const foodFinishSchema=z.object({comparisonId:z.string().min(40).max(1000000),observations:z.array(z.discriminatedUnion('status',[observed,unavailable])).min(1).max(2)}).strict();
+export const foodCompareSchema=z.object({request:foodPlanSchema,observations:foodFinishSchema.shape.observations}).strict();
 type FoodObservation=z.infer<typeof observed>;
 const lifetime=15*60*1000;
 
@@ -101,6 +102,12 @@ function observationReason(o:FoodObservation,request:z.infer<typeof foodPlanSche
 export class AgentFoodComparisons {
   private key=randomBytes(32);
   constructor(private now:()=>number=Date.now) {}
+  compare(input:unknown) {
+    const {request,observations}=foodCompareSchema.parse(input);
+    const plan=this.prepare(request);
+    const {comparisonId,...result}=this.finish({comparisonId:plan.comparisonId,observations});
+    return result;
+  }
   prepare(input:unknown) {
     const request=foodPlanSchema.parse(input),now=this.now(),nonce=randomBytes(12),cipher=createCipheriv('aes-256-gcm',this.key,nonce);
     const encrypted=Buffer.concat([cipher.update(JSON.stringify({request,createdAt:now}),'utf8'),cipher.final()]);
@@ -133,7 +140,7 @@ export class AgentFoodComparisons {
     const fastest=timed?(a!.etaMinutesMax!<b!.etaMinutesMin!?a!.provider:b!.etaMinutesMax!<a!.etaMinutesMin!?b!.provider:null):null;
     const overlap=timed&&fastest===null;
     const priceDifferenceCents=comparable?Math.abs(a!.totalCents-b!.totalCents):null;
-    return {comparisonId,status:comparable?'comparable':'incomplete',request:plan.request,quotes:accepted,excluded,
+    return {comparisonId,checkedAt:new Date(now).toISOString(),status:comparable?'comparable':'incomplete',request:plan.request,quotes:accepted,excluded,
       ranking:{cheapest,fastest},ties:{price:comparable&&cheapest===null,delivery:timed&&a!.etaMinutesMin===b!.etaMinutesMin&&a!.etaMinutesMax===b!.etaMinutesMax},
       deliveryEstimatesOverlap:overlap,priceDifferenceCents,
       recommendation:comparable?{provider:plan.request.priority==='cheapest'?cheapest:fastest,basis:plan.request.priority,reason:plan.request.priority==='cheapest'?(cheapest?'Lowest observed final checkout total including the common tip.':'The observed totals are tied.'):(fastest?'The observed delivery windows do not overlap; this provider has the earlier window.':timed?'Delivery windows overlap; there is no clear fastest provider.':'A comparable delivery estimate is missing.')}:null,

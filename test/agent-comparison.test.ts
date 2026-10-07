@@ -52,7 +52,7 @@ test('real MCP client discovers tools and completes a two-call comparison',async
   const [ct,st]=InMemoryTransport.createLinkedPair();
   try {
     await Promise.all([server.connect(st),client.connect(ct)]);
-    const tools=await client.listTools();assert.deepEqual(tools.tools.map(t=>t.name),['prepare_ride_comparison','finish_ride_comparison','prepare_food_comparison','finish_food_comparison']);
+    const tools=await client.listTools();assert.deepEqual(tools.tools.map(t=>t.name),['prepare_ride_comparison','finish_ride_comparison','prepare_food_comparison','finish_food_comparison','compare_food_quotes']);
     const manifest=await client.request({method:'skills/list',params:{}},z.object({skills:z.array(z.any())}));
     assert.equal(manifest.skills[0].frontmatter.name,'compare-rides');
     const resource=await client.readResource({uri:manifest.skills[0].uri});

@@ -38,6 +38,7 @@ import { compareRidesAutomatically } from "./providers/ride-flow.js";
 import { compareEatsAutomatically } from "./providers/eat-flow.js";
 import { verifyQuoteContext } from "./verification.js";
 import {createMcpHandler} from './mcp-handler.js';
+import {foodWidgetHtml} from './food-widget.js';
 
 export interface ApplicationOptions {
   port: number;
@@ -442,6 +443,11 @@ export async function createApplication(options: ApplicationOptions) {
       const path = new URL(req.url || "/", "http://localhost").pathname;
       const method = req.method || "GET";
       if(path==='/mcp') return await mcpHandler(req,res);
+      if(path==='/comparison-preview'&&method==='GET') {
+        const hash=(tag:string)=>createHash('sha256').update(foodWidgetHtml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`))![1]!).digest('base64');
+        res.setHeader('Content-Security-Policy',`default-src 'none'; script-src 'sha256-${hash('script')}'; style-src 'sha256-${hash('style')}'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'none'`);
+        res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(foodWidgetHtml);return;
+      }
       if (path === "/health" && method === "GET") return send(res,200,{ok:true});
       if (!path.startsWith("/api/")) {
         const assets: Record<string, [string, string]> = {
